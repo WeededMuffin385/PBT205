@@ -1,0 +1,51 @@
+@property --arrow {
+    syntax: "*";
+    inherits: false;
+    initial-value: 32px;
+}
+
+@property --message-color {
+    syntax: "<color>";
+    inherits: false;
+    initial-value: lightgreen;
+}
+
+.Message {
+    background-color: var(--message-color);
+    border-radius: 16px;
+
+    padding: 16px;
+    max-width: 65%;
+
+    box-shadow: black 0 0 8px 0;
+
+    & > h3 {
+        font-size: 1rem;
+    }
+
+    & > h3.Time {
+        bottom: 4px;
+        right: 4px;
+        position: absolute;
+
+        font-weight: 400;
+        color: gray;
+    }
+
+    & > p {
+        overflow-wrap: break-word;
+    }
+
+    position: relative;
+
+    &.Mine {
+        align-self: flex-end;
+        border-top-right-radius: 0;
+    }
+
+
+    &.Theirs {
+        align-self: flex-start;
+        border-top-left-radius: 0;
+    }
+}
