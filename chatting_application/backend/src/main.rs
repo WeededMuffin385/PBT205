@@ -24,7 +24,7 @@ async fn main() {
     info!("Hello, World!");
 
     let config = RustlsConfig::from_pem_file("assets/localhost.pem", "assets/localhost-key.pem").await.unwrap();
-    let addr = "localhost:8080".to_socket_addrs().unwrap().next().unwrap();
+    let addr = "0.0.0.0:8080".to_socket_addrs().unwrap().next().unwrap();
     let context = Context::new().await;
 
     let app = app::router()

@@ -26,4 +26,4 @@ reqwest = { version = "0.13.2", features = ["form", "json"] }
 url = "2.5.8"
 
 jsonwebtoken = {version = "10.3.0", features = ["aws_lc_rs"]}
-sqlx = {version = "0.8.6", features = ["postgres"]}
+sqlx = {version = "0.8.6", features = ["postgres", "runtime-tokio"]}

@@ -7,16 +7,14 @@ pub struct Database {
 
 impl Database {
 	pub async fn new() -> Self {
-		todo!("add password and host");
-
-		let username = "postgres";
-		let password = r#"TODO_PASSWORD"#;
+		let username = "admin";
+		let password = "secret";
 
 		let options = PgConnectOptions::new()
 		 .username(username)
 		 .password(password)
 		 .database("postgres")
-		 .host("TODO_HOST");
+		 .host("database");
 
 		let pool = PgPoolOptions::new()
 		 .max_connections(2)

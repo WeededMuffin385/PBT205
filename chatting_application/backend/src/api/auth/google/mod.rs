@@ -17,7 +17,7 @@ use crate::context::Context;
 
 pub const GOOGLE_CLIENT_ID: &str = "375985968237-rfs9subku539q8l40kuvc7v2g526bfuc.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET: &str = "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";
-const GOOGLE_REDIRECT_URL: &str = "https://localhost:5173/api/auth/google/callback";
+const GOOGLE_REDIRECT_URL: &str = "https://localhost:8080/api/auth/google/callback";
 
 pub fn router() -> Router<Context> {
 	Router::new()
