@@ -1,4 +1,4 @@
-mod google;
+pub mod google;
 
 use axum::Router;
 use crate::context::Context;
