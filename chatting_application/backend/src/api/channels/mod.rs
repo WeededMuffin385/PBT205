@@ -4,12 +4,13 @@ use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Response, Sse};
 use axum::routing::{get, post};
 use axum::{middleware, Json, Router};
-use futures_util::{stream, Stream};
+use futures_util::{stream, Stream, StreamExt as _};
 use std::convert::Infallible;
 use std::time::Duration;
 use axum::http::StatusCode;
 use axum::middleware::Next;
-use tokio_stream::StreamExt as _;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
@@ -36,7 +37,7 @@ pub fn router(context: Context) -> Router<Context> {
 async fn get_channels(
 	State(state): State<Context>,
 ) -> Response {
-	
+	todo!()
 }
 
 async fn get_messages(
@@ -72,19 +73,45 @@ async fn sse_handler(
 	State(state): State<Context>,
 	Path(id): Path<Uuid>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-	let entry = state.0.messages_broadcast.entry(id).or_insert_with(||broadcast::Sender::new(1024));
-	let receiver = entry.subscribe();
+	let queue = state.0.broker.channel.queue_declare(
+		"".into(),
+		QueueDeclareOptions {
+			exclusive: true,
+			auto_delete: true,
+			durable: false,
+			..Default::default()
+		},
+		FieldTable::default()
+	).await.unwrap();
 
-	let stream = BroadcastStream::new(receiver).filter_map(|result|  {
-		match result {
-			Ok(message) => {
+	state.0.broker.channel.queue_bind(
+		queue.name().clone(),
+		"events".into(),
+		id.to_string().into(),
+		QueueBindOptions::default(),
+		FieldTable::default(),
+	).await.unwrap();
+
+	let consumer = state.0.broker.channel.basic_consume(
+		queue.name().clone(),
+		"".into(),
+		BasicConsumeOptions::default(),
+		FieldTable::default()
+	).await.unwrap();
+
+	let stream = consumer.filter_map(async |delivery| {
+		match delivery {
+			Ok(delivery) => {
+				delivery.ack(BasicAckOptions::default()).await.unwrap();
+				let message: Message = postcard::from_bytes(&delivery.data).unwrap();
 				let json = serde_json::to_string(&message).unwrap();
+
 				Some(Ok(Event::default().data(json)))
-			},
-			Err(error) => {
-				error!("{:?}", error);
+			}
+			Err(err) => {
+				error!("error: {err:?}");
 				None
-			},
+			}
 		}
 	});
 

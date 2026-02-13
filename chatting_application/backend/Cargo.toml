@@ -30,3 +30,6 @@ sqlx = {version = "0.8.6", features = ["postgres", "runtime-tokio"]}
 
 dashmap = "6.1.0"
 uuid = {version = "1.20.0", features = ["serde", "v4"]}
+
+lapin = "4.0.0"
+postcard = "1.1.3"

@@ -4,6 +4,8 @@ use crate::context::Context;
 use axum::ServiceExt;
 use axum_server::tls_rustls::RustlsConfig;
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::time::Duration;
+use tokio::time::sleep;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -21,6 +23,7 @@ async fn main() {
      .with_env_filter(EnvFilter::from_default_env())
      .init();
 
+    sleep(Duration::from_secs(10)).await;
     info!("Hello, World!");
 
     let config = RustlsConfig::from_pem_file("assets/localhost.pem", "assets/localhost-key.pem").await.unwrap();

@@ -1,4 +1,16 @@
 services:
+  rabbit:
+    image: rabbitmq:4.2.3-management
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: secret
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+
   database:
     image: postgres:18
     environment:
@@ -8,7 +20,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql
+      - pg_data:/var/lib/postgresql
+
+
   backend:
     build:
       context: .
@@ -24,4 +38,5 @@ services:
       - ./assets:/assets
 
 volumes:
-  pgdata:
+  pg_data:
+  rabbitmq_data:

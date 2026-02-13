@@ -1,4 +1,5 @@
 pub mod database;
+mod broker;
 
 use std::sync::Arc;
 use dashmap::DashMap;
@@ -7,6 +8,7 @@ use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 use crate::api::auth::google::GOOGLE_CLIENT_ID;
+use crate::context::broker::Broker;
 use crate::context::database::Database;
 use crate::message::Message;
 
@@ -26,6 +28,7 @@ pub struct InnerContext {
 	pub validation: Validation,
 
 	pub database: Database,
+	pub broker: Broker,
 }
 
 impl InnerContext {
@@ -40,6 +43,7 @@ impl InnerContext {
 		validation.validate_aud = true;
 
 		let database = Database::new().await;
+		let broker = Broker::new().await;
 
 		Self {
 			messages_broadcast: Default::default(),
@@ -47,6 +51,7 @@ impl InnerContext {
 			jwk_set,
 			database,
 			validation,
+			broker,
 		}
 	}
 }

@@ -1,5 +1,6 @@
 use sqlx::PgPool;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use tracing::info;
 
 pub struct Database {
 	pub pool: PgPool,
@@ -19,6 +20,8 @@ impl Database {
 		let pool = PgPoolOptions::new()
 		 .max_connections(2)
 		 .connect_with(options).await.unwrap();
+
+		info!("Connected to Postgres");
 		
 		Self { pool }
 	}
