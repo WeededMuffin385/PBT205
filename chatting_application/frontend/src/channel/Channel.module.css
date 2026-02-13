@@ -1,0 +1,76 @@
+.Chat {
+    padding: 0 32px 32px;
+
+    background-color: ghostwhite;
+
+    display: flex;
+    overflow-y: hidden;
+    flex-direction: column;
+    height: 100%;
+    width: 64rem;
+
+    & > .Messages {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+
+
+        padding: var(--container-padding);
+
+
+        overflow-y: scroll;
+        gap: 16px;
+    }
+
+    & > .Input {
+        flex: 0;
+        width: 100%;
+        height: fit-content;
+        background-color: lightgreen;
+
+        border-radius: 32px;
+        padding: 8px;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        box-shadow: black 0 0 8px 0;
+        z-index: 50;
+
+        & > textarea {
+            all: unset;
+            width: 100%;
+            line-height: 1.5rem;
+            height: 1.5rem;
+            resize: none;
+
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        & > .ButtonContainer {
+            display: flex;
+            flex-direction: column;
+            justify-content: end;
+            height: 100%;
+
+            & > button {
+                all: unset;
+                background-color: white;
+                font-size: 2rem;
+                border-radius: 2rem;
+                padding: 4px;
+
+                transition: background-color 1s;
+
+                &:hover {
+                    background-color: red;
+                    cursor: pointer;
+                }
+            }
+        }
+    }
+}

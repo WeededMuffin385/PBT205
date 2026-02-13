@@ -1,0 +1,11 @@
+.Placeholder {
+    height: 100%;
+    width: 64rem;
+    background-color: floralwhite;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+}

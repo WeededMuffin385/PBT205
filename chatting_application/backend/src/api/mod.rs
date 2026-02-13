@@ -1,11 +1,11 @@
 pub mod auth;
-mod messages;
+mod channels;
 
 use axum::Router;
 use crate::context::Context;
 
-pub fn router() -> Router<Context> {
+pub fn router(context: Context) -> Router<Context> {
 	Router::new()
 	 .nest("/auth", auth::router())
-	 .nest("/messages", messages::router())
+	 .nest("/channels", channels::router(context))
 }

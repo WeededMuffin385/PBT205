@@ -5,10 +5,10 @@ use tower_http::trace::TraceLayer;
 use crate::api;
 use crate::context::Context;
 
-pub fn router() -> Router<Context> {
+pub fn router(context: Context) -> Router<Context> {
 	let spa = ServeDir::new("./frontend/dist").fallback(ServeDir::new("./frontend/dist/index.html"));
 
 	Router::new()
-	 .nest("/api", api::router())
+	 .nest("/api", api::router(context))
 	 .fallback_service(spa)
 }

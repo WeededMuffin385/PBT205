@@ -1,9 +1,11 @@
 pub mod database;
 
 use std::sync::Arc;
+use dashmap::DashMap;
 use jsonwebtoken::{Algorithm, Validation};
 use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::broadcast;
+use uuid::Uuid;
 use crate::api::auth::google::GOOGLE_CLIENT_ID;
 use crate::context::database::Database;
 use crate::message::Message;
@@ -18,7 +20,7 @@ impl Context {
 }
 
 pub struct InnerContext {
-	pub messages_broadcaster: broadcast::Sender<Message>,
+	pub messages_broadcast: DashMap<Uuid, broadcast::Sender<Message>>,
 
 	pub jwk_set: JwkSet,
 	pub validation: Validation,
@@ -40,7 +42,7 @@ impl InnerContext {
 		let database = Database::new().await;
 
 		Self {
-			messages_broadcaster: broadcast::Sender::new(1024),
+			messages_broadcast: Default::default(),
 
 			jwk_set,
 			database,

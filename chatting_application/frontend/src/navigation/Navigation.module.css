@@ -1,0 +1,80 @@
+.Navigation {
+    height: 100%;
+    flex: 1;
+
+    background-color: ghostwhite;
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 32px;
+    gap: 32px;
+
+    border-right: 2px solid black;
+
+    & > .CreateChatButton {
+        all: unset;
+        background-color: lightgreen;
+        text-align: center;
+
+        font-size: 1.5rem;
+        font-weight: 700;
+        border-radius: 32px;
+        padding: 16px;
+
+        transition: background-color 1s, color 1s;
+
+        &:hover {
+            color: greenyellow;
+            background-color: green;
+            cursor: pointer;
+        }
+    }
+
+    & > .GoogleAuthButton {
+        all: unset;
+
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+
+        width: 96px;
+        height: 96px;
+        background-color: lightgray;
+        border-radius: 96px;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+
+        & > img {
+            width: calc(100% - 16px);
+            height: calc(100% - 16px);
+        }
+
+        transition: background-color 1s;
+
+        &:hover {
+            background-color: lightgreen;
+            cursor: pointer;
+        }
+    }
+
+    & > .Chats {
+        border: 2px solid black;
+        border-radius: 32px;
+        flex: 1;
+
+        gap: 16px;
+
+        display: flex;
+        flex-direction: column;
+
+        overflow-y: scroll;
+        padding: 16px;
+    }
+}

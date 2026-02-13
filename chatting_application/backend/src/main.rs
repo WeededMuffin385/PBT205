@@ -27,7 +27,7 @@ async fn main() {
     let addr = "0.0.0.0:8080".to_socket_addrs().unwrap().next().unwrap();
     let context = Context::new().await;
 
-    let app = app::router()
+    let app = app::router(context.clone())
      .with_state(context)
      .layer(TraceLayer::new_for_http());
 
