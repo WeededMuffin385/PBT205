@@ -1,37 +1,43 @@
+use crate::authentication_extractor::Authentication;
 use crate::context::Context;
+use crate::message::Message;
 use axum::extract::{Path, Request, State};
+use axum::http::StatusCode;
+use axum::middleware::Next;
 use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Response, Sse};
 use axum::routing::{get, post};
 use axum::{middleware, Json, Router};
+use axum_extra::extract::CookieJar;
+use axum_extra::TypedHeader;
 use futures_util::{stream, Stream, StreamExt as _};
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
+use lapin::BasicProperties;
+use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::time::Duration;
-use axum::http::StatusCode;
-use axum::middleware::Next;
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::error;
 use uuid::Uuid;
-use crate::message::Message;
+use crate::account::Account;
 
 pub fn router(context: Context) -> Router<Context> {
 	Router::new()
 	 .route("/", get(get_channels))
-	 .route("/{id}/", get(get_messages))
-	 .route("/{id}/", post(post_message))
+	 .route("/{id}", get(get_messages))
+	 .route("/{id}", post(post_message))
 	 .route("/{id}/callback", get(sse_handler))
-	 .layer(middleware::from_fn_with_state(context, async |
+/*	 .layer(middleware::from_fn_with_state(context, async |
 		 State(state): State<Context>,
 		 Path(id): Path<Uuid>,
 		 request: Request,
 		 next: Next,
 	 | -> Response {
 		 next.run(request).await
-	 }))
+	 }))*/
 }
 
 async fn get_channels(
@@ -54,17 +60,30 @@ pub struct PostMessageRequest {
 
 async fn post_message(
 	State(state): State<Context>,
+	authentication: Authentication,
 	Path(id): Path<Uuid>,
 	Json(request): Json<PostMessageRequest>,
 ) -> Response {
-	let entry = state.0.messages_broadcast.entry(id).or_insert_with(||broadcast::Sender::new(1024));
+	let Account{account_id, account_name} = authentication.account.clone();
 
-	entry.send(Message{
+	let message = Message{
+		account_name,
+		account_id,
+
 		content: request.content,
-		sender: "anonymous".to_string(),
-		time: "todo!".to_string(),
-		date: "todo!".to_string(),
-	}).unwrap();
+		created_at: Utc::now(),
+	};
+
+	const MESSAGE_BUFFER_SIZE: usize = 2usize.pow(13);
+	let message = postcard::to_vec::<_, MESSAGE_BUFFER_SIZE>(&message).unwrap();
+
+	state.0.broker.channel.basic_publish(
+		"events".into(),
+		id.to_string().into(),
+		BasicPublishOptions::default(),
+		&message,
+		BasicProperties::default().with_delivery_mode(2),
+	).await.unwrap().await.unwrap();
 
 	StatusCode::CREATED.into_response()
 }

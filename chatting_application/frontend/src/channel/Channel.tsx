@@ -3,16 +3,21 @@ import {useEffect, useRef, useState} from "react";
 import {useMutation} from "@tanstack/react-query";
 import Message from '../message/Message'
 import { useParams } from "react-router-dom";
+import {useCookies} from "react-cookie";
 
 export type Message = {
+    account_name: string,
+    account_id: number,
+
     content: string,
-    sender: string,
-    time: string,
-    date: string,
+    created_at: string,
 };
 
 export default function Channel() {
     const { id } = useParams();
+    const [cookies] = useCookies(['account_id'])
+
+    const account_id = Number(cookies.account_id)
 
     const sendMessageMutation = useMutation({
         mutationFn: async (content: string) => {
@@ -39,6 +44,7 @@ export default function Channel() {
             const message: Message = JSON.parse(event.data);
             console.log(message);
             setMessages((prev) => [...prev, message])
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         };
 
         return () => eventSource.close()
@@ -57,14 +63,22 @@ export default function Channel() {
         el.style.height = `${el.scrollHeight}px`;
     }
 
+
+    const bottomRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages.length]);
+
     return (
         <div className={styles.Chat}>
             <div className={styles.Messages}>
                 {
                     messages.map((message) => (
-                        <Message content={message.content} sender={message.sender} mine={true} time={message.time} date={message.date} />
+                        <Message key={`${message.account_id}-${message.created_at}`} content={message.content} sender={message.account_name} mine={message.account_id === account_id} created_at={message.created_at} />
                     ))
                 }
+
+                <div ref={bottomRef}></div>
             </div>
 
             <div className={styles.Input}>

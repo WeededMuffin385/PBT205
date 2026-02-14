@@ -1,8 +1,11 @@
+use std::time::Duration;
 use axum::extract::{Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Router;
 use axum::routing::{get, post};
+use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::extract::CookieJar;
 use jsonwebtoken::{DecodingKey, TokenData};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use rand::distr::Alphanumeric;
@@ -11,13 +14,13 @@ use serde::Deserialize;
 use serde_json::Value;
 use tracing::info;
 use url::Url;
+use uuid::Uuid;
 use crate::context::Context;
 
 /// https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
+/// https://developers.google.com/identity/protocols/oauth2/web-server
 
-pub const GOOGLE_CLIENT_ID: &str = "375985968237-rfs9subku539q8l40kuvc7v2g526bfuc.apps.googleusercontent.com";
-const GOOGLE_CLIENT_SECRET: &str = "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";
-const GOOGLE_REDIRECT_URL: &str = "https://localhost:8080/api/auth/google/callback";
+
 
 pub fn router() -> Router<Context> {
 	Router::new()
@@ -25,70 +28,50 @@ pub fn router() -> Router<Context> {
 	 .route("/callback", get(google_auth_callback))
 }
 
-async fn google_auth() -> Response {
-	let state: String = rand::rng()
+async fn google_auth(
+	State(state): State<Context>,
+	jar: CookieJar,
+) -> Response {
+	let oauth_state: String = rand::rng()
 	 .sample_iter(Alphanumeric)
 	 .take(32)
 	 .map(char::from)
 	 .collect();
 
-	let mut auth_url = Url::parse("https://accounts.google.com/o/oauth2/v2/auth").unwrap();
-	auth_url.query_pairs_mut()
-	 .append_pair("client_id", GOOGLE_CLIENT_ID)
-	 .append_pair("redirect_uri", GOOGLE_REDIRECT_URL)
-	 .append_pair("response_type", "code")
-	 .append_pair("scope", "openid")
-	 .append_pair("state", &state)
-	 .append_pair("access_type", "offline")
-	 .append_pair("prompt", "consent");
+	info!("auth state: {}", oauth_state);
 
-	let cookie = format!(
-		"oauth_state={}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=300",
-		state
+	let auth_url = state.0.google_oauth.get_auth_url(&oauth_state).await;
+
+	let jar = jar.add(Cookie::build(("oauth_state", oauth_state))
+	 .path("/")
+	 .http_only(true)
+	 .secure(false)
+	 .same_site(SameSite::Lax)
+	 .max_age(Duration::from_mins(30).try_into().unwrap())
 	);
 
-	let mut response = Redirect::temporary(auth_url.as_str()).into_response();
-	response.headers_mut().append(
-		header::SET_COOKIE,
-		cookie.parse().unwrap()
-	);
-
-	response
+	(jar, Redirect::temporary(auth_url.as_str())).into_response()
 }
 
 #[derive(Deserialize)]
-struct AuthQuery {
+struct AuthCallbackQuery {
 	code: String,
 	state: String,
 }
 
 async fn google_auth_callback(
 	State(state): State<Context>,
-	Query(params): Query<AuthQuery>,
+	Query(params): Query<AuthCallbackQuery>,
 	headers: HeaderMap,
+	jar: CookieJar,
 ) -> Result<Response, StatusCode> {
-	let cookie_header = headers
-	 .get("cookie")
-	 .and_then(|v| v.to_str().ok())
-	 .unwrap_or("");
-
-	let stored_state = cookie_header
-	 .split("; ")
-	 .find_map(|c| {
-		 let mut parts = c.split('=');
-		 if parts.next()? == "oauth_state" {
-			 parts.next()
-		 } else {
-			 None
-		 }
-	 })
-	 .unwrap_or("");
+	let stored_state = jar.get("oauth_state").unwrap().value().to_string();
 
 	if stored_state != params.state {
 		panic!("OAuth state mismatch");
 	}
 
-	let response = get_google_token(params.code).await;
+	let response = state.0.google_oauth.exchange_code(params.code).await;
 	let jwt = response.id_token;
 
 	let header = jsonwebtoken::decode_header(&jwt).map_err(|_| StatusCode::UNAUTHORIZED)?;
@@ -99,60 +82,39 @@ async fn google_auth_callback(
 	info!("headers: {:#?}", claims.header);
 	info!("claims: {:#?}", claims.claims);
 
-	Ok(StatusCode::OK.into_response())
+	let google_account_id = claims.claims.sub;
+	let google_account_name = claims.claims.name;
+	let account_id = state.0.database.get_or_init_account_id_with_google_account_id(google_account_id, google_account_name).await;
 
-/*	let session_id = todo!("get session id by generating UUIDV4 and placing it in a Database with sub; sub is taken from id_token that is JWT");
+	let session_id = Uuid::now_v7();
+	state.0.database.add_session_id(session_id, account_id).await;
 
-	let cookie = format!(
-		"session={}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900",
-		session_id
+	let jar = jar.add(Cookie::build(("session", session_id.to_string()))
+	 .path("/")
+	 .http_only(true)
+	 .secure(true)
+	 .same_site(SameSite::Lax)
+	 .max_age(Duration::from_mins(30).try_into().unwrap())
 	);
 
-	let mut response = Redirect::temporary("/").into_response();
-	response.headers_mut().append(
-		header::SET_COOKIE,
-		HeaderValue::from_str(&cookie).unwrap(),
+	let jar = jar.add(Cookie::build(("account_id", account_id.to_string()))
+	 .path("/")
+	 .http_only(false)
+	 .secure(false)
+	 .same_site(SameSite::Lax)
+	 .max_age(Duration::from_mins(30).try_into().unwrap())
 	);
 
-	Ok(response)*/
+	Ok((jar, Redirect::temporary("/")).into_response())
 }
 
-/// https://developers.google.com/identity/gsi/web/guides/verify-google-id-token
+/// https://developers.google.com/identity/openid-connect/openid-connect#an-id-tokens-payload
 #[derive(Deserialize, Debug)]
 struct GoogleClaims {
-	pub email: Option<String>,
-	pub email_verified: Option<bool>,
-
 	pub sub: String,
 	pub iss: String,
 	pub iat: usize,
 	pub exp: usize,
-}
 
-#[derive(Deserialize, Debug)]
-struct GoogleTokenResponse {
-	id_token: String,
-}
-
-async fn get_google_token(code: String) -> GoogleTokenResponse {
-	let client = reqwest::Client::new();
-
-	let response = client
-	 .post("https://oauth2.googleapis.com/token")
-	 .form(&[
-		 ("client_id", GOOGLE_CLIENT_ID),
-		 ("client_secret", GOOGLE_CLIENT_SECRET),
-		 ("code", &code),
-		 ("grant_type", "authorization_code"),
-		 ("redirect_uri", GOOGLE_REDIRECT_URL),
-	 ])
-	 .send()
-	 .await
-	 .unwrap();
-
-	let payload = response.text().await.unwrap();
-
-	info!("payload: {payload}");
-
-	serde_json::from_str(&payload).unwrap()
+	pub name: String
 }

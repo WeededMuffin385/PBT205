@@ -1,5 +1,5 @@
-use lapin::{BasicProperties, Channel, Connection, ConnectionProperties};
-use lapin::options::{BasicPublishOptions, QueueDeclareOptions};
+use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, ExchangeKind};
+use lapin::options::{BasicPublishOptions, ExchangeDeclareOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use tracing::info;
 
@@ -18,11 +18,17 @@ impl Broker {
 		info!("Connected to RabbitMQ");
 
 		let channel = conn.create_channel().await.unwrap();
-/*		channel.queue_declare("channel.a".into(), QueueDeclareOptions::default(), FieldTable::default()).await.unwrap();
 
-		let payload = b"message";
-		channel.basic_publish("".into(), "channel.a".into(), BasicPublishOptions::default(), payload, BasicProperties::default()).await.unwrap();
-*/
+		channel.exchange_declare(
+			"events".into(),
+			ExchangeKind::Topic,
+			ExchangeDeclareOptions{
+				durable: true,
+				.. Default::default()
+			},
+			FieldTable::default(),
+		).await.unwrap();
+
 		Self {
 			conn,
 			channel,

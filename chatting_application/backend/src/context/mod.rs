@@ -1,5 +1,6 @@
-pub mod database;
+mod database;
 mod broker;
+mod google_oauth;
 
 use std::sync::Arc;
 use dashmap::DashMap;
@@ -7,9 +8,9 @@ use jsonwebtoken::{Algorithm, Validation};
 use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::broadcast;
 use uuid::Uuid;
-use crate::api::auth::google::GOOGLE_CLIENT_ID;
 use crate::context::broker::Broker;
 use crate::context::database::Database;
+use crate::context::google_oauth::{GoogleOauth, GOOGLE_CLIENT_ID};
 use crate::message::Message;
 
 #[derive(Clone)]
@@ -27,6 +28,7 @@ pub struct InnerContext {
 	pub jwk_set: JwkSet,
 	pub validation: Validation,
 
+	pub google_oauth: GoogleOauth,
 	pub database: Database,
 	pub broker: Broker,
 }
@@ -42,6 +44,7 @@ impl InnerContext {
 		validation.validate_nbf = true;
 		validation.validate_aud = true;
 
+		let google_oauth = GoogleOauth::new();
 		let database = Database::new().await;
 		let broker = Broker::new().await;
 
@@ -49,9 +52,11 @@ impl InnerContext {
 			messages_broadcast: Default::default(),
 
 			jwk_set,
-			database,
 			validation,
+
 			broker,
+			database,
+			google_oauth,
 		}
 	}
 }
