@@ -82,7 +82,7 @@ async fn post_message(
 		id.to_string().into(),
 		BasicPublishOptions::default(),
 		&message,
-		BasicProperties::default().with_delivery_mode(2),
+		BasicProperties::default().with_delivery_mode(1),
 	).await.unwrap().await.unwrap();
 
 	StatusCode::CREATED.into_response()

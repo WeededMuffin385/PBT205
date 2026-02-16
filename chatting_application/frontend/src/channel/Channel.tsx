@@ -14,7 +14,7 @@ export type Message = {
 };
 
 export default function Channel() {
-    const { id } = useParams();
+    const {id} = useParams();
     const [cookies] = useCookies(['account_id'])
 
     const account_id = Number(cookies.account_id)
@@ -35,9 +35,16 @@ export default function Channel() {
         }
     });
 
+    const bottomRef = useRef<HTMLDivElement>(null);
     const [messages, setMessages] = useState<Message[]>([]);
 
     useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages.length]);
+
+    useEffect(() => {
+        setMessages([])
+
         const eventSource = new EventSource(`/api/channels/${id}/callback`);
 
         eventSource.onmessage = (event) => {
@@ -48,7 +55,7 @@ export default function Channel() {
         };
 
         return () => eventSource.close()
-    }, [])
+    }, [id]);
 
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -62,12 +69,6 @@ export default function Channel() {
         el.style.height = 'auto';
         el.style.height = `${el.scrollHeight}px`;
     }
-
-
-    const bottomRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages.length]);
 
     return (
         <div className={styles.Chat}>
