@@ -9,8 +9,13 @@ CREATE TABLE google_accounts (
 );
 
 CREATE TABLE sessions (
-    session_id TEXT PRIMARY KEY,
+    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     account_id BIGINT NOT NULL REFERENCES accounts (account_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT now() + interval '30 minutes'
+);
+
+CREATE TABLE channels (
+    channel_id UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
+    name TEXT UNIQUE NOT NULL
 );

@@ -1,6 +1,6 @@
 .Navigation {
     height: 100%;
-    flex: 1;
+    width: 30%;
 
     background-color: ghostwhite;
     position: relative;
@@ -64,7 +64,7 @@
         }
     }
 
-    & > .Chats {
+    & > .Channels {
         border: 2px solid black;
         border-radius: 32px;
         flex: 1;

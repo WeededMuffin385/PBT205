@@ -1,8 +1,9 @@
+use lapin::Channel;
 use sqlx::{FromRow, PgPool};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::info;
 use uuid::Uuid;
-use crate::account::Account;
+use crate::types::account::Account;
 
 pub struct Database {
 	pub pool: PgPool,
@@ -28,15 +29,13 @@ impl Database {
 		Self { pool }
 	}
 
-	pub async fn add_session_id(
+	pub async fn add_session(
 		&self,
-		session_id: Uuid,
 		account_id: i64,
-	) {
+	) -> Uuid {
 		let mut conn = self.pool.acquire().await.unwrap();
-		let session_id = session_id.to_string();
 
-		sqlx::query!("INSERT INTO sessions (session_id, account_id) VALUES ($1, $2)", &session_id, account_id).execute(&mut *conn).await.unwrap();
+		sqlx::query_scalar!("INSERT INTO sessions (account_id) VALUES ($1) RETURNING session_id", account_id).fetch_one(&mut *conn).await.unwrap()
 	}
 
 	pub async fn get_or_init_account_id_with_google_account_id(&self, google_account_id: String, google_account_name: String) -> i64 {
@@ -72,19 +71,41 @@ impl Database {
 
 	pub async fn get_account_by_session(
 		&self,
-		session: Uuid,
+		session_id: Uuid,
 	) -> Option<Account> {
 		let mut conn = self.pool.acquire().await.unwrap();
 
-		let session_id = session.to_string();
-
-		sqlx::query_as!(Account, r#"
+		sqlx::query_as!(Account, "
 			SELECT accounts.account_id, account_name
 			FROM sessions
 			JOIN accounts ON accounts.account_id = sessions.account_id
 			WHERE session_id = $1
 			AND expires_at > now()
-		"#, &session_id).fetch_optional(&mut *conn).await.unwrap()
+		", &session_id).fetch_optional(&mut *conn).await.unwrap()
+	}
+
+	pub async fn get_channels(
+		&self,
+	) -> Vec<crate::types::channel::Channel> {
+		let mut conn = self.pool.acquire().await.unwrap();
+
+		sqlx::query_as!(crate::types::channel::Channel, "
+			SELECT * FROM channels
+		").fetch_all(&mut *conn).await.unwrap()
+	}
+
+	pub async fn add_channel(
+		&self,
+		name: String,
+	) -> Uuid {
+		let mut conn = self.pool.acquire().await.unwrap();
+		sqlx::query_scalar!("INSERT INTO channels (name) VALUES ($1) RETURNING channel_id", &name).fetch_one(&mut *conn).await.unwrap()
+	}
+	
+	pub async fn delete_channel(&self, channel_id: Uuid) {
+		let mut conn = self.pool.acquire().await.unwrap();
+		
+		sqlx::query!("DELETE FROM channels WHERE channel_id = $1", channel_id).execute(&mut *conn).await.unwrap();
 	}
 }
 

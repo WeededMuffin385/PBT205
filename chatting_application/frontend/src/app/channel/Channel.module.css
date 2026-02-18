@@ -7,7 +7,7 @@
     overflow-y: hidden;
     flex-direction: column;
     height: 100%;
-    width: 64rem;
+    width: 70%;
 
     & > .Messages {
         flex: 1;

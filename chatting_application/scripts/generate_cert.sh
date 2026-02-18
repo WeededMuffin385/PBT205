@@ -1,4 +1,5 @@
 (
+  mkdir assets
   cd assets
-  mkcert localhost 127.0.0.1 ::1
+  mkcert localhost
 )

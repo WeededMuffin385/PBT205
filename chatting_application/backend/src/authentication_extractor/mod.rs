@@ -4,8 +4,8 @@ use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum_extra::extract::CookieJar;
 use uuid::Uuid;
-use crate::account::Account;
 use crate::context::Context;
+use crate::types::account::Account;
 
 #[derive(Clone, Debug)]
 pub struct Authentication {

@@ -1,7 +1,7 @@
 .ChannelButton {
     height: 4rem;
     padding: 0.5rem;
-    border-radius: 3rem;
+    border-radius: 2rem;
     background-color: lightgreen;
     font-size: 1.5rem;
 
@@ -14,21 +14,23 @@
     & > button {
         all: unset;
         font-size: 2rem;
-        border-radius: 100%;
-        background-color: greenyellow;
         aspect-ratio: 1 / 1;
 
         display: flex;
         flex-direction: column;
+        padding: 4px;
 
         align-items: center;
         justify-content: center;
 
-        transition: background-color 1s;
 
-        &:hover {
-            background-color: green;
-            cursor: pointer;
+        & > .Icon {
+            transition: color 1s;
+
+            &:hover {
+                color: red;
+                cursor: pointer;
+            }
         }
     }
 }

@@ -2,16 +2,16 @@ mod database;
 mod broker;
 mod google_oauth;
 
-use std::sync::Arc;
-use dashmap::DashMap;
-use jsonwebtoken::{Algorithm, Validation};
-use jsonwebtoken::jwk::JwkSet;
-use tokio::sync::broadcast;
-use uuid::Uuid;
 use crate::context::broker::Broker;
 use crate::context::database::Database;
 use crate::context::google_oauth::{GoogleOauth, GOOGLE_CLIENT_ID};
-use crate::message::Message;
+use crate::types::message::Message;
+use dashmap::DashMap;
+use jsonwebtoken::jwk::JwkSet;
+use jsonwebtoken::{Algorithm, Validation};
+use std::sync::Arc;
+use tokio::sync::broadcast;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct Context(pub Arc<InnerContext>);

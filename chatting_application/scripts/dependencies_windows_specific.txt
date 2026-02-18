@@ -1,0 +1,3 @@
+Requires WSL and Docker
+
+Requires Visual Studio with desktop C++ tools

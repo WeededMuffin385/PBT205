@@ -1,0 +1,7 @@
+.Sidebar {
+    height: 100%;
+    width: 20%;
+    border-radius: 32px;
+
+    background-color: slategray;
+}

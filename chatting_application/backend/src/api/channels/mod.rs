@@ -1,12 +1,11 @@
 use crate::authentication_extractor::Authentication;
 use crate::context::Context;
-use crate::message::Message;
 use axum::extract::{Path, Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::sse::{Event, KeepAlive};
 use axum::response::{IntoResponse, Response, Sse};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{middleware, Json, Router};
 use axum_extra::extract::CookieJar;
 use axum_extra::TypedHeader;
@@ -22,28 +21,51 @@ use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::error;
 use uuid::Uuid;
-use crate::account::Account;
+use crate::types::account::Account;
+use crate::types::message::Message;
 
 pub fn router(context: Context) -> Router<Context> {
 	Router::new()
 	 .route("/", get(get_channels))
+	 .route("/", post(post_channel))
 	 .route("/{id}", get(get_messages))
 	 .route("/{id}", post(post_message))
+	 .route("/{id}", delete(delete_channel))
 	 .route("/{id}/callback", get(sse_handler))
-/*	 .layer(middleware::from_fn_with_state(context, async |
-		 State(state): State<Context>,
-		 Path(id): Path<Uuid>,
-		 request: Request,
-		 next: Next,
-	 | -> Response {
-		 next.run(request).await
-	 }))*/
+}
+
+#[derive(Deserialize)]
+struct PostChannelRequest {
+	name: String,
+}
+
+#[derive(Serialize)]
+struct PostChannelResponse {
+	id: Uuid,
+}
+
+async fn post_channel(
+	State(state): State<Context>,
+	Json(request): Json<PostChannelRequest>,
+) -> Response {
+	let id = state.0.database.add_channel(request.name).await;
+	
+	Json(PostChannelResponse{id}).into_response()
 }
 
 async fn get_channels(
 	State(state): State<Context>,
 ) -> Response {
-	todo!()
+	let channels = state.0.database.get_channels().await;
+	Json(channels).into_response()
+}
+
+async fn delete_channel(
+	State(state): State<Context>,
+	Path(id): Path<Uuid>,
+) -> Response {
+	state.0.database.delete_channel(id).await;
+	StatusCode::OK.into_response()
 }
 
 async fn get_messages(
