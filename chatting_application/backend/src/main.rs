@@ -20,8 +20,8 @@ mod types;
 async fn main() {
     jsonwebtoken::crypto::aws_lc::DEFAULT_PROVIDER.install_default().unwrap();
     tracing_subscriber::fmt()
-     .with_env_filter(EnvFilter::from_default_env())
-     .init();
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     sleep(Duration::from_secs(10)).await;
     info!("Hello, World!");

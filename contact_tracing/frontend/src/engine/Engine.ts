@@ -1,3 +1,19 @@
+import pawn from './pawn.svg'
+import grass from './grass.svg'
+
+type Message = {
+    x: number,
+    y: number,
+    account_id: number,
+    account_name: string,
+}
+
+type Account = {
+    x: number,
+    y: number,
+    account_name: string,
+}
+
 export default class Engine {
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
@@ -6,10 +22,17 @@ export default class Engine {
 
     private zoom = 50.0;
     private camera = {x: 0, y: 0};
+    private position = {x: 0, y: 0};
     private isDragging = false;
     private lastCursorPos = {x: 0, y: 0};
     private renderDistance = 128;
-    private boardSize = 512;
+    private size = 512;
+
+    private pawn: HTMLImageElement = new Image();
+    private grass: HTMLImageElement = new Image();
+
+    private accounts: Record<number, Account> = {};
+    private positionEventSource: EventSource;
 
     constructor(canvas: HTMLCanvasElement) {
         const context = canvas.getContext('2d');
@@ -17,8 +40,32 @@ export default class Engine {
         this.context = context
         this.canvas = canvas
 
-        this.resize()
+        this.pawn.src = pawn;
+        this.grass.src = grass;
+
         window.addEventListener("resize", this.resize)
+
+        for (let i = 0; i < 32; ++i) {
+            const x = Math.floor(Math.random() * (this.size + 1));
+            const y = Math.floor(Math.random() * (this.size + 1));
+
+            this.accounts[i] = {
+                x,
+                y,
+                account_name: "noname"
+            }
+        }
+
+        this.positionEventSource = new EventSource(`/api/position/callback`)
+        this.positionEventSource.onmessage = (event) => {
+            const message: Message = JSON.parse(event.data);
+            this.accounts[message.account_id] = {
+                x: message.x,
+                y: message.y,
+                account_name: message.account_name,
+            }
+            console.log(message);
+        };
 
         this.canvas.addEventListener("wheel", (e) => {
             if (!e.ctrlKey) return;
@@ -86,16 +133,51 @@ export default class Engine {
                 this.canvas.releasePointerCapture(e.pointerId)
             } catch {}
         })
+
+        window.addEventListener("keydown", (e) => {
+            const step = 1; // размер шага
+
+            switch (e.code) {
+                case "ArrowUp":
+                    this.position.y -= step;
+                    break;
+
+                case "ArrowDown":
+                    this.position.y += step;
+                    break;
+
+                case "ArrowLeft":
+                    this.position.x -= step;
+                    break;
+
+                case "ArrowRight":
+                    this.position.x += step;
+                    break;
+            }
+
+            fetch('/api/position', {
+                method: 'POST',
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({x: this.position.x, y: this.position.y}),
+            })
+        });
     }
 
     start() {
         if (this.run) return;
         this.run = true
-        this.update()
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.resize()
+                this.update()
+            })
+        })
     }
 
     stop() {
         this.run = false
+        this.positionEventSource.close()
     }
 
     getCamera() {
@@ -141,9 +223,10 @@ export default class Engine {
 
 
         this.draw_board();
+        this.draw_accounts();
 
-/*        this.context.fillStyle = "red";
-        this.context.fillRect(0, 0, 1, 1);*/
+        /*        this.context.fillStyle = "red";
+                this.context.fillRect(0, 0, 1, 1);*/
     }
 
     private draw_board() {
@@ -155,8 +238,8 @@ export default class Engine {
                 if (x < 0) continue;
                 if (y < 0) continue;
 
-                if (x >= this.boardSize) continue;
-                if (y >= this.boardSize) continue;
+                if (x >= this.size) continue;
+                if (y >= this.size) continue;
 
                 if ((x + y) % 2 === 0) {
                     this.context.fillStyle = 'green';
@@ -166,6 +249,12 @@ export default class Engine {
 
                 this.context.fillRect(x, y, 1, 1)
             }
+        }
+    }
+
+    private draw_accounts() {
+        for (const [_, value] of Object.entries(this.accounts)) {
+            this.context.drawImage(this.pawn, value.x, value.y, 1, 1);
         }
     }
 

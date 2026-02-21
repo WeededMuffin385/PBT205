@@ -3,19 +3,9 @@ CREATE TABLE accounts (
     account_name TEXT NOT NULL
 );
 
-CREATE TABLE google_accounts (
-    account_id        BIGINT PRIMARY KEY REFERENCES accounts (account_id) ON DELETE CASCADE,
-    google_account_id TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE sessions (
     session_id UUID PRIMARY KEY     DEFAULT uuidv7(),
     account_id BIGINT      NOT NULL REFERENCES accounts (account_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL DEFAULT now() + interval '30 minutes'
-);
-
-CREATE TABLE channels (
-    channel_id UUID PRIMARY KEY DEFAULT uuidv7(),
-    name       TEXT UNIQUE NOT NULL
-);
+)

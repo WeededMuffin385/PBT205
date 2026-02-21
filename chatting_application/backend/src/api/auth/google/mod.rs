@@ -86,7 +86,7 @@ async fn google_auth_callback(
 	let google_account_name = claims.claims.name;
 	let account_id = state.0.database.get_or_init_account_id_with_google_account_id(google_account_id, google_account_name).await;
 	
-	let session_id = state.0.database.add_session(account_id).await;
+	let session_id = state.0.database.add_account_session_id(account_id).await;
 
 	let jar = jar.add(Cookie::build(("session", session_id.to_string()))
 	 .path("/")

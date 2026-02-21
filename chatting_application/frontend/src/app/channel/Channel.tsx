@@ -61,7 +61,7 @@ export default function Channel() {
 
     const submitMessage = () => {
         if (!inputRef.current) return;
-        let message = inputRef.current.value
+        const message = inputRef.current.value
         sendMessageMutation.mutate(message)
         inputRef.current.value = ""
 

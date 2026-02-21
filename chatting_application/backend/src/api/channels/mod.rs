@@ -31,7 +31,7 @@ pub fn router(context: Context) -> Router<Context> {
 	 .route("/{id}", get(get_messages))
 	 .route("/{id}", post(post_message))
 	 .route("/{id}", delete(delete_channel))
-	 .route("/{id}/callback", get(sse_handler))
+	 .route("/{id}/callback", get(get_channel_callback))
 }
 
 #[derive(Deserialize)]
@@ -110,7 +110,7 @@ async fn post_message(
 	StatusCode::CREATED.into_response()
 }
 
-async fn sse_handler(
+async fn get_channel_callback(
 	State(state): State<Context>,
 	Path(id): Path<Uuid>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {

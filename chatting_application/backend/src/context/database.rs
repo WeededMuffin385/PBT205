@@ -29,7 +29,7 @@ impl Database {
 		Self { pool }
 	}
 
-	pub async fn add_session(
+	pub async fn add_account_session_id(
 		&self,
 		account_id: i64,
 	) -> Uuid {
@@ -69,7 +69,7 @@ impl Database {
 		"#, google_account_id, google_account_name).fetch_one(&mut *conn).await.unwrap()
 	}
 
-	pub async fn get_account_by_session(
+	pub async fn get_account_by_session_id(
 		&self,
 		session_id: Uuid,
 	) -> Option<Account> {

@@ -1,0 +1,112 @@
+use std::convert::Infallible;
+use std::time::Duration;
+use axum::extract::State;
+use axum::response::{IntoResponse, Response, Sse};
+use axum::response::sse::{Event, KeepAlive};
+use axum::{Json, Router};
+use axum::http::StatusCode;
+use axum::routing::{get, post};
+use futures_util::Stream;
+use lapin::BasicProperties;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
+use serde::{Deserialize, Serialize};
+use crate::authentication_extractor::Authentication;
+use crate::context::Context;
+use futures_util::StreamExt;
+use tracing::error;
+use crate::context::broker::POSITION_EXCHANGE;
+
+pub fn router() -> Router<Context> {
+    Router::new()
+        .route("/", post(post_position))
+        .route("/callback", get(get_position_callback))
+}
+
+#[derive(Deserialize)]
+struct PostPositionRequest {
+    x: i64,
+    y: i64,
+}
+
+#[derive(Deserialize, Serialize)]
+struct Message {
+    x: i64,
+    y: i64,
+    account_id: i64,
+    account_name: String,
+}
+
+async fn post_position(
+    State(state): State<Context>,
+    authentication: Authentication,
+    Json(request): Json<PostPositionRequest>,
+) -> Response {
+    let message = Message {
+        x: request.x,
+        y: request.y,
+        account_id: authentication.account.account_id,
+        account_name: authentication.account.account_name,
+    };
+
+    const MESSAGE_BUFFER_SIZE: usize = 2usize.pow(8);
+    let message = postcard::to_vec::<_, MESSAGE_BUFFER_SIZE>(&message).unwrap();
+
+    state.0.broker.channel.basic_publish(
+        POSITION_EXCHANGE.into(),
+        authentication.account.account_id.to_string().into(),
+        BasicPublishOptions::default(),
+        &message,
+        BasicProperties::default().with_delivery_mode(1),
+    ).await.unwrap().await.unwrap();
+
+    StatusCode::OK.into_response()
+}
+
+async fn get_position_callback(
+    State(state): State<Context>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let queue = state.0.broker.channel.queue_declare(
+        "".into(),
+        QueueDeclareOptions {
+            exclusive: true,
+            auto_delete: true,
+            durable: false,
+            ..Default::default()
+        },
+        FieldTable::default()
+    ).await.unwrap();
+
+    state.0.broker.channel.queue_bind(
+        queue.name().clone(),
+        POSITION_EXCHANGE.into(),
+        "#".into(),
+        QueueBindOptions::default(),
+        FieldTable::default(),
+    ).await.unwrap();
+
+    let consumer = state.0.broker.channel.basic_consume(
+        queue.name().clone(),
+        "".into(),
+        BasicConsumeOptions::default(),
+        FieldTable::default()
+    ).await.unwrap();
+
+    let stream = consumer.filter_map(async |delivery| {
+        match delivery {
+            Ok(delivery) => {
+                delivery.ack(BasicAckOptions::default()).await.unwrap();
+                let message: Message = postcard::from_bytes(&delivery.data).unwrap();
+                let json = serde_json::to_string(&message).unwrap();
+
+                Some(Ok(Event::default().data(json)))
+            }
+            Err(err) => {
+                error!("error: {err:?}");
+                None
+            }
+        }
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)))
+}

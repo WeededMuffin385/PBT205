@@ -1,0 +1,54 @@
+services:
+  rabbit:
+    image: rabbitmq:4.2.3-management
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: secret
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  database:
+    image: postgres:18.2
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@localhost
+      PGADMIN_DEFAULT_PASSWORD: secret
+      PGADMIN_CONFIG_GLOBALLY_DELIVERABLE: 'False'
+      PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS: '["localhost"]'
+    ports:
+      - "15673:80"
+    depends_on:
+      - database
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.dockerfile
+      args:
+        TARGET: ${TARGET}
+        PROFILE: ${PROFILE}
+    environment:
+      RUST_LOG: info,tower_http=trace
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./assets:/assets
+
+volumes:
+  pg_data:
+  rabbitmq_data:
