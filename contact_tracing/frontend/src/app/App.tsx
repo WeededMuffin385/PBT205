@@ -6,6 +6,7 @@ import Authorisation from "./authorisation/Authorisation.tsx";
 
 function App() {
     const [camera, setCamera] = useState({x: 0, y: 0})
+    const [position, setPosition] = useState({x: 0, y: 0})
     const [authorisation, setAuthorisation] = useState(false)
 
     useEffect(() => {
@@ -31,8 +32,8 @@ function App() {
     return (
         <div className={styles.App}>
             {authorisation && <Authorisation onClose={() => {setAuthorisation(false)}}/>}
-            <Sidebar camera={camera}/>
-            <World setCamera={setCamera} />
+            <Sidebar camera={camera} position={position}/>
+            <World setCamera={setCamera} setPosition={setPosition}/>
         </div>
     )
 }

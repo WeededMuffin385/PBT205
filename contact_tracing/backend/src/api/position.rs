@@ -16,6 +16,7 @@ use crate::context::Context;
 use futures_util::StreamExt;
 use tracing::error;
 use crate::context::broker::POSITION_EXCHANGE;
+use crate::types::account::Account;
 
 pub fn router() -> Router<Context> {
     Router::new()
@@ -29,20 +30,14 @@ struct PostPositionRequest {
     y: i64,
 }
 
-#[derive(Deserialize, Serialize)]
-struct Message {
-    x: i64,
-    y: i64,
-    account_id: i64,
-    account_name: String,
-}
-
 async fn post_position(
     State(state): State<Context>,
     authentication: Authentication,
     Json(request): Json<PostPositionRequest>,
 ) -> Response {
-    let message = Message {
+    state.0.database.set_account_position(authentication.account.account_id, request.x, request.y).await;
+
+    let message = Account {
         x: request.x,
         y: request.y,
         account_id: authentication.account.account_id,
@@ -62,6 +57,7 @@ async fn post_position(
 
     StatusCode::OK.into_response()
 }
+
 
 async fn get_position_callback(
     State(state): State<Context>,
@@ -96,7 +92,7 @@ async fn get_position_callback(
         match delivery {
             Ok(delivery) => {
                 delivery.ack(BasicAckOptions::default()).await.unwrap();
-                let message: Message = postcard::from_bytes(&delivery.data).unwrap();
+                let message: Account = postcard::from_bytes(&delivery.data).unwrap();
                 let json = serde_json::to_string(&message).unwrap();
 
                 Some(Ok(Event::default().data(json)))

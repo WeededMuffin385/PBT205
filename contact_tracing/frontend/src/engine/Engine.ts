@@ -1,18 +1,6 @@
 import pawn from './pawn.svg'
 import grass from './grass.svg'
-
-type Message = {
-    x: number,
-    y: number,
-    account_id: number,
-    account_name: string,
-}
-
-type Account = {
-    x: number,
-    y: number,
-    account_name: string,
-}
+import type {Account} from "../app/world/World.tsx";
 
 export default class Engine {
     private canvas: HTMLCanvasElement;
@@ -22,48 +10,59 @@ export default class Engine {
 
     private zoom = 50.0;
     private camera = {x: 0, y: 0};
-    private position = {x: 0, y: 0};
+
+    private account: Account;
+    private position_sent = {x: 0, y: 0}
+    private position_send_interval: number | null = null;
+
+    private direction = {x: 0, y: 0};
+    private direction_keys = {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+    }
+
     private isDragging = false;
     private lastCursorPos = {x: 0, y: 0};
     private renderDistance = 128;
-    private size = 512;
+    private dimensions: {w: number, h: number};
 
     private pawn: HTMLImageElement = new Image();
     private grass: HTMLImageElement = new Image();
 
+    private grasses: {x: number, y: number}[];
     private accounts: Record<number, Account> = {};
     private positionEventSource: EventSource;
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, dimensions: {w: number, h: number}, account: Account, accounts: Account[]) {
         const context = canvas.getContext('2d');
         if (!context) throw new Error('failed to create 2d context')
+        this.dimensions = dimensions
+        this.account = account
         this.context = context
         this.canvas = canvas
 
         this.pawn.src = pawn;
         this.grass.src = grass;
 
+        this.accounts = Object.fromEntries(accounts.map(account => [account.account_id, account]))
+        this.accounts[account.account_id] = account;
+        this.camera = {...account}
+
+        this.grasses = Array.from({ length: 256 }, () => {
+            const x = Math.floor(Math.random() * (this.dimensions.w + 1));
+            const y = Math.floor(Math.random() * (this.dimensions.h + 1));
+
+            return {x, y}
+        })
+
         window.addEventListener("resize", this.resize)
-
-        for (let i = 0; i < 32; ++i) {
-            const x = Math.floor(Math.random() * (this.size + 1));
-            const y = Math.floor(Math.random() * (this.size + 1));
-
-            this.accounts[i] = {
-                x,
-                y,
-                account_name: "noname"
-            }
-        }
 
         this.positionEventSource = new EventSource(`/api/position/callback`)
         this.positionEventSource.onmessage = (event) => {
-            const message: Message = JSON.parse(event.data);
-            this.accounts[message.account_id] = {
-                x: message.x,
-                y: message.y,
-                account_name: message.account_name,
-            }
+            const message: Account = JSON.parse(event.data);
+            this.accounts[message.account_id] = message
             console.log(message);
         };
 
@@ -134,33 +133,70 @@ export default class Engine {
             } catch {}
         })
 
-        window.addEventListener("keydown", (e) => {
-            const step = 1; // размер шага
+        window.addEventListener("keydown", this.handleKeyDown);
+        window.addEventListener("keyup", this.handleKeyUp);
 
-            switch (e.code) {
-                case "ArrowUp":
-                    this.position.y -= step;
-                    break;
+        console.log("Engine created");
+    }
 
-                case "ArrowDown":
-                    this.position.y += step;
-                    break;
+    private handleKeyDown = (e: KeyboardEvent) => {
+        if (e.repeat) return;
 
-                case "ArrowLeft":
-                    this.position.x -= step;
-                    break;
+        switch (e.code) {
+            case "ArrowUp":
+                this.direction_keys.up = true
+                break;
 
-                case "ArrowRight":
-                    this.position.x += step;
-                    break;
+            case "ArrowDown":
+                this.direction_keys.down = true
+                break;
+
+            case "ArrowLeft":
+                this.direction_keys.left = true
+                break;
+
+            case "ArrowRight":
+                this.direction_keys.right = true
+                break;
+
+            default:
+                return;
+        }
+
+        if (this.position_send_interval === null) {
+            this.send_position()
+            this.position_send_interval = setInterval(this.send_position, 100)
+        }
+    }
+
+    private handleKeyUp = (e: KeyboardEvent) => {
+        switch (e.code) {
+            case "ArrowUp":
+                this.direction_keys.up = false
+                break;
+
+            case "ArrowDown":
+                this.direction_keys.down = false
+                break;
+
+            case "ArrowLeft":
+                this.direction_keys.left = false
+                break;
+
+            case "ArrowRight":
+                this.direction_keys.right = false
+                break;
+
+            default:
+                return;
+        }
+
+        if (!this.direction_keys.up && !this.direction_keys.down && !this.direction_keys.left && !this.direction_keys.right) {
+            if (this.position_send_interval !== null) {
+                clearInterval(this.position_send_interval)
+                this.position_send_interval = null
             }
-
-            fetch('/api/position', {
-                method: 'POST',
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({x: this.position.x, y: this.position.y}),
-            })
-        });
+        }
     }
 
     start() {
@@ -178,10 +214,24 @@ export default class Engine {
     stop() {
         this.run = false
         this.positionEventSource.close()
+
+        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener("keyup", this.handleKeyUp);
+
+        if (this.position_send_interval !== null) {
+            clearInterval(this.position_send_interval);
+            this.position_send_interval = null;
+        }
+
+        console.log("Engine stopped");
     }
 
     getCamera() {
         return {...this.camera}
+    }
+
+    getPosition(): {x: number, y: number} {
+        return {...this.account}
     }
 
     private update() {
@@ -224,9 +274,7 @@ export default class Engine {
 
         this.draw_board();
         this.draw_accounts();
-
-        /*        this.context.fillStyle = "red";
-                this.context.fillRect(0, 0, 1, 1);*/
+        this.draw_grass();
     }
 
     private draw_board() {
@@ -238,8 +286,8 @@ export default class Engine {
                 if (x < 0) continue;
                 if (y < 0) continue;
 
-                if (x >= this.size) continue;
-                if (y >= this.size) continue;
+                if (x >= this.dimensions.w) continue;
+                if (y >= this.dimensions.h) continue;
 
                 if ((x + y) % 2 === 0) {
                     this.context.fillStyle = 'green';
@@ -258,6 +306,14 @@ export default class Engine {
         }
     }
 
+    private draw_grass() {
+        const dy = 0.25;
+
+        for (const grass of this.grasses) {
+            this.context.drawImage(this.grass, grass.x, grass.y + dy, 1, 1)
+        }
+    }
+
     private resize = () => {
         console.log("resized")
 
@@ -266,5 +322,23 @@ export default class Engine {
 
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
+    }
+
+    private send_position = () => {
+        this.direction.x = (this.direction_keys.left ? -1 : 0) + (this.direction_keys.right ? +1 : 0)
+        this.direction.y = (this.direction_keys.up ? -1 : 0) + (this.direction_keys.down ? +1 : 0)
+
+        this.account.x += this.direction.x
+        this.account.y += this.direction.y
+
+        if ((this.account.x == this.position_sent.x) && (this.account.y == this.position_sent.y)) return
+
+        this.position_sent = {...this.account}
+
+        fetch('/api/position', {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({x: this.account.x, y: this.account.y}),
+        })
     }
 }

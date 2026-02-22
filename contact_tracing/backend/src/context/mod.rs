@@ -17,16 +17,19 @@ impl Context {
 pub struct InnerContext {
     pub broker: Broker,
     pub database: Database,
+    pub dimensions: [i64; 2],
 }
 
 impl InnerContext {
     pub async fn new() -> Self {
         let broker = Broker::new().await;
         let database = Database::new().await;
+        let dimensions = [512, 512];
 
         Self {
             broker,
             database,
+            dimensions,
         }
     }
 }

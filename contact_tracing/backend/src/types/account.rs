@@ -4,4 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct Account {
     pub account_id: i64,
     pub account_name: String,
+    
+    pub x: i64,
+    pub y: i64,
 }

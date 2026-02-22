@@ -9,12 +9,6 @@ import Placeholder from "./placeholder/Placeholder.tsx";
 
 
 export default function App() {
-
-
-
-
-
-
     return (
         <div className={styles.App}>
             <Navigation />

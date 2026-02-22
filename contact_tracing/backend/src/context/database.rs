@@ -28,10 +28,10 @@ impl Database {
         Self { pool }
     }
 
-    pub async fn add_account(&self, account_name: String) -> i64 {
+    pub async fn add_account(&self, account_name: &str, x: i64, y: i64) -> i64 {
         let mut conn = self.pool.acquire().await.unwrap();
 
-        sqlx::query_scalar!("INSERT INTO accounts (account_name) VALUES ($1) RETURNING account_id", &account_name).fetch_one(&mut *conn).await.unwrap()
+        sqlx::query_scalar!("INSERT INTO accounts (account_name, x, y) VALUES ($1, $2, $3) RETURNING account_id", account_name, x, y).fetch_one(&mut *conn).await.unwrap()
     }
 
     pub async fn add_account_session_id(&self, account_id: i64) -> Uuid {
@@ -44,10 +44,22 @@ impl Database {
         let mut conn = self.pool.acquire().await.unwrap();
 
         sqlx::query_as!(Account, "
-            SELECT accounts.account_id, account_name
+            SELECT accounts.account_id, account_name, x, y
             FROM sessions
             JOIN accounts ON accounts.account_id = sessions.account_id
             WHERE sessions.session_id = $1
         ", &session_id).fetch_optional(&mut *conn).await.unwrap()
+    }
+
+    pub async fn get_accounts(&self) -> Vec<Account> {
+        let mut conn = self.pool.acquire().await.unwrap();
+
+        sqlx::query_as!(Account, "SELECT account_id, account_name, x, y FROM accounts").fetch_all(&mut *conn).await.unwrap()
+    }
+
+    pub async fn set_account_position(&self, account_id: i64, x: i64, y: i64) {
+        let mut conn = self.pool.acquire().await.unwrap();
+
+        sqlx::query!("UPDATE accounts SET x = $1, y = $2 WHERE account_id = $3", x, y, account_id).execute(&mut *conn).await.unwrap();
     }
 }

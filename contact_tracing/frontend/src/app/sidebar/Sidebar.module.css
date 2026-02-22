@@ -5,4 +5,7 @@
     padding: 32px;
 
     background-color: slategray;
+
+    display: flex;
+    flex-direction: column;
 }
