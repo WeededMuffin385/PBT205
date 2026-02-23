@@ -5,5 +5,7 @@
 - rust, cargo
 
 ### steps to compile app:
-- run scripts/run_database.sh
-- run scripts/build.sh
+- run scripts/generate_cert.sh
+- run scripts/run_database.sh in a separate console
+- run scripts/build.sh in a separate console
+- open https://localhost:8080
