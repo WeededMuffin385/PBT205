@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 TARGET="x86_64-unknown-linux-gnu"
@@ -14,6 +15,7 @@ sudo -v
 
 (
   cd frontend
+  npm install
   npm run build
 )
 
