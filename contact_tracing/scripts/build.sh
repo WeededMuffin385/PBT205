@@ -1,7 +1,9 @@
 set -euo pipefail
 
 TARGET="x86_64-unknown-linux-gnu"
-PACKAGE="backend"
+PACKAGE_BACKEND="backend"
+PACKAGE_TRACKER="tracker"
+
 PROFILE="release"
 PROFILE_FLAG="--release"
 
@@ -15,8 +17,10 @@ sudo -v
   npm run build
 )
 
-docker compose up -d database
-until docker compose exec database pg_isready -U admin; do sleep 1; done
+docker compose up -d postgres
+until docker compose exec postgres pg_isready -U admin; do sleep 1; done
 
-cargo build --target $TARGET --package $PACKAGE $PROFILE_FLAG
+cargo build --target $TARGET --package $PACKAGE_BACKEND $PROFILE_FLAG
+cargo build --target $TARGET --package $PACKAGE_TRACKER $PROFILE_FLAG
+
 sudo -E docker compose up --build

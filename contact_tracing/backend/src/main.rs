@@ -11,7 +11,7 @@ mod app;
 mod context;
 mod api;
 mod authentication_extractor;
-mod types;
+mod common;
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +19,6 @@ async fn main() {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    sleep(Duration::from_secs(10)).await;
     info!("Hello, World!");
 
     let config = RustlsConfig::from_pem_file("assets/localhost.pem", "assets/localhost-key.pem").await.unwrap();

@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::info;
 use uuid::Uuid;
-use crate::types::account::Account;
+use crate::common::account::Account;
 
 pub struct Database {
     pub pool: PgPool,
@@ -17,7 +17,7 @@ impl Database {
             .username(username)
             .password(password)
             .database("postgres")
-            .host("database");
+            .host("postgres");
 
         let pool = PgPoolOptions::new()
             .max_connections(2)

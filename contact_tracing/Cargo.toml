@@ -3,3 +3,31 @@ members = [
     "backend",
     "tracker",
 ]
+
+[workspace.dependencies]
+# serialisation
+    serde = { version = "1.0.228", features = ["derive"] }
+    postcard = "1.1.3"
+    serde_json = "1.0.149"
+# serialisation end
+
+
+
+# middleware
+    lapin = "4.0.0"
+    sqlx = {version = "0.8.6", features = ["postgres", "runtime-tokio", "uuid"]}
+# middleware end
+
+
+
+# async
+    futures-util = "0.3.31"
+    tokio = {version = "1.49.0", features = ["full"]}
+# async end
+
+
+
+# tracing
+    tracing = "0.1.44"
+    tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+# tracing end

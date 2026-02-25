@@ -1,9 +1,8 @@
-use lapin::{Channel, Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use lapin::types::FieldTable;
+use lapin::{Channel, Connection, ConnectionProperties, ExchangeKind};
 use tracing::info;
-
-pub const POSITION_EXCHANGE: &str = "position";
+use crate::common::{POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
 
 pub struct Broker {
     pub conn: Connection,
@@ -13,7 +12,7 @@ pub struct Broker {
 impl Broker {
     pub async fn new() -> Self {
         let conn = Connection::connect(
-            "amqp://admin:secret@rabbit:5672",
+            "amqp://admin:secret@rabbitmq:5672",
             ConnectionProperties::default(),
         ).await.unwrap();
 
@@ -23,6 +22,26 @@ impl Broker {
 
         channel.exchange_declare(
             POSITION_EXCHANGE.into(),
+            ExchangeKind::Topic,
+            ExchangeDeclareOptions{
+                durable: true,
+                .. Default::default()
+            },
+            FieldTable::default(),
+        ).await.unwrap();
+
+        channel.exchange_declare(
+            QUERY_REQUEST_EXCHANGE.into(),
+            ExchangeKind::Topic,
+            ExchangeDeclareOptions{
+                durable: true,
+                .. Default::default()
+            },
+            FieldTable::default(),
+        ).await.unwrap();
+
+        channel.exchange_declare(
+            QUERY_RESPONSE_EXCHANGE.into(),
             ExchangeKind::Topic,
             ExchangeDeclareOptions{
                 durable: true,

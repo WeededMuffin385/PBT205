@@ -1,1 +1,1 @@
-docker compose up database pgadmin
+docker compose up postgres pgadmin
