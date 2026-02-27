@@ -1,8 +1,11 @@
+use lapin::{Channel, Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use lapin::types::FieldTable;
-use lapin::{Channel, Connection, ConnectionProperties, ExchangeKind};
 use tracing::info;
-use crate::common::{POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
+
+pub const POSITION_EXCHANGE: &str = "position";
+pub const QUERY_REQUEST_EXCHANGE: &str = "query_request";
+pub const QUERY_RESPONSE_EXCHANGE: &str = "query_response";
 
 pub struct Broker {
     pub conn: Connection,

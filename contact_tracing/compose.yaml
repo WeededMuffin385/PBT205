@@ -3,9 +3,10 @@ services:
     image: rabbitmq:4.2.3-management
     healthcheck:
       test: rabbitmq-diagnostics -q ping
-      interval: 30s
-      timeout: 30s
-      retries: 3
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     ports:
       - "5672:5672"      # AMQP
       - "15672:15672"    # Management UI

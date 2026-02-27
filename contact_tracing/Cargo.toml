@@ -2,6 +2,7 @@
 members = [
     "backend",
     "tracker",
+    "common",
 ]
 
 [workspace.dependencies]
@@ -31,3 +32,9 @@ members = [
     tracing = "0.1.44"
     tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 # tracing end
+
+
+
+# local libs
+    common.path = "common"
+# local libs end

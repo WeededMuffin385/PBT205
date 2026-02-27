@@ -1,8 +1,7 @@
-pub mod broker;
 mod database;
 
 use std::sync::Arc;
-use crate::context::broker::Broker;
+use common::broker::Broker;
 use crate::context::database::Database;
 
 #[derive(Clone)]

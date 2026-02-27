@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use lapin::{Channel, Connection, ConnectionProperties, Consumer};
-use lapin::options::{BasicAckOptions, BasicConsumeOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, Consumer};
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::{error, info};
-use backend::common::account::Account;
-use backend::common::{POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE};
 use futures_util::StreamExt;
+use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tracing_subscriber::EnvFilter;
-use backend::common::query::{QueryRequest, QueryResponse};
+use common::account::Account;
+use common::broker::{Broker, POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
+use common::query::{QueryRequest, QueryResponse};
 
 #[tokio::main]
 async fn main() {
@@ -19,12 +20,6 @@ async fn main() {
         .init();
 
     info!("Hello, World!");
-
-    let rabbitmq = Connection::connect(
-        "amqp://admin:secret@rabbitmq:5672",
-        ConnectionProperties::default(),
-    ).await.unwrap();
-    let channel = rabbitmq.create_channel().await.unwrap();
 
     let username = "admin";
     let password = "secret";
@@ -42,76 +37,73 @@ async fn main() {
     let accounts = sqlx::query_as!(Account, "SELECT * FROM accounts").fetch_all(&mut *conn).await.unwrap();
     let mut accounts: HashMap<i64, Account> = accounts.into_iter().map(|account|(account.account_id, account)).collect();
 
-    let queue = channel.queue_declare(
-        "".into(),
-        QueueDeclareOptions {
-            exclusive: true,
-            auto_delete: true,
-            durable: false,
-            ..Default::default()
-        },
-        FieldTable::default()
-    ).await.unwrap();
+    let broker = Broker::new().await;
+    let mut position_consumer = create_consumer(&broker.channel, POSITION_EXCHANGE).await;
+    let mut query_request_consumer = create_consumer(&broker.channel, QUERY_REQUEST_EXCHANGE).await;
 
-    channel.queue_bind(
-        queue.name().clone(),
-        POSITION_EXCHANGE.into(),
-        "#".into(),
-        QueueBindOptions::default(),
-        FieldTable::default(),
-    ).await.unwrap();
+    let mut collisions = Vec::new();
 
-    let mut consumer = channel.basic_consume(
-        queue.name().clone(),
-        "".into(),
-        BasicConsumeOptions::default(),
-        FieldTable::default()
-    ).await.unwrap();
+    loop {
+        select! {
+            delivery = position_consumer.next() => {
+                let Some(delivery) = delivery else {
+                    error!("rabbitmq channel closed");
+                    break;
+                };
+                let delivery = delivery.unwrap();
+                let message: Account = postcard::from_bytes(&delivery.data).unwrap();
 
-    let collisions = Arc::new(Mutex::new(Vec::new()));
+                info!("received an event from position exchange: {message:?}");
 
-    run_responder(&channel, collisions.clone()).await;
+                for (account_id, account) in accounts.iter().filter(|(id, _)| **id != message.account_id) {
+                    if (account.x == message.x) && (account.y == message.y) {
+                        collisions.push((account_id.clone(), message.account_id));
 
-    while let Some(delivery) = consumer.next().await {
-        let delivery = delivery.unwrap();
-        delivery.ack(BasicAckOptions::default()).await.unwrap();
-        let message: Account = postcard::from_bytes(&delivery.data).unwrap();
+                        info!("collision detected between {{account_id: {}}} and {{account_id: {}}}, location: x: {}, y: {}", message.account_id, account_id, message.x, message.y)
+                    }
+                }
 
-        info!("Message received: {:?}", message);
+                accounts.insert(message.account_id, message);
+            }
 
-        for (account_id, account) in accounts.iter().filter(|(id, _)| **id != message.account_id) {
-            if (account.x == message.x) && (account.y == message.y) {
-                collisions.lock().await.push((account_id.clone(), message.account_id));
+            delivery = query_request_consumer.next() => {
+                let Some(delivery) = delivery else {
+                    error!("rabbitmq channel closed");
+                    break;
+                };
+                let delivery = delivery.unwrap();
+                let request: QueryRequest = postcard::from_bytes(&delivery.data).unwrap();
+
+                let collided_accounts = collisions.iter().rev().filter_map(|&(a, b)|{
+                    if a == request.account_id {
+                        Some(b)
+                    } else if b == request.account_id {
+                        Some(a)
+                    } else {
+                        None
+                    }
+                }).collect();
+
+                let response = QueryResponse {
+                    collided_accounts,
+                };
+
+                const MESSAGE_BUFFER_SIZE: usize = 2usize.pow(16);
+                let response = postcard::to_vec::<_, MESSAGE_BUFFER_SIZE>(&response).unwrap();
+
+                broker.channel.basic_publish(
+                    QUERY_RESPONSE_EXCHANGE.into(),
+                    request.account_id.to_string().into(),
+                    BasicPublishOptions::default(),
+                    &response,
+                    BasicProperties::default().with_delivery_mode(1),
+                ).await.unwrap().await.unwrap();
             }
         }
-
-        accounts.insert(message.account_id, message);
     }
 }
 
-async fn run_responder(channel: &Channel, collisions: Arc<Mutex<Vec<(i64, i64)>>>) {
-    let mut query_request_consumer = create_query_request_consumer(channel).await;
-
-    tokio::spawn(async move {
-        while let Some(delivery) = query_request_consumer.next().await {
-            let delivery = delivery.unwrap();
-            delivery.ack(BasicAckOptions::default()).await.unwrap();
-            let message: QueryRequest = postcard::from_bytes(&delivery.data).unwrap();
-
-            let collisions: Vec<i64> = collisions.lock().await.iter().filter_map(|&(a, b)|{
-                if a == message.account_id {
-                    Some(b)
-                } else if b == message.account_id {
-                    Some(a)
-                } else {
-                    None
-                }
-            }).collect();
-        }
-    });
-}
-
-async fn create_query_request_consumer(channel: &Channel) -> Consumer {
+async fn create_consumer(channel: &Channel, exchange: &str) -> Consumer {
     let queue = channel.queue_declare(
         "".into(),
         QueueDeclareOptions {
@@ -125,7 +117,7 @@ async fn create_query_request_consumer(channel: &Channel) -> Consumer {
 
     channel.queue_bind(
         queue.name().clone(),
-        QUERY_REQUEST_EXCHANGE.into(),
+        exchange.into(),
         "#".into(),
         QueueBindOptions::default(),
         FieldTable::default(),

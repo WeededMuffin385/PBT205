@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::info;
 use uuid::Uuid;
-use crate::common::account::Account;
+use common::account::Account;
 
 pub struct Database {
     pub pool: PgPool,

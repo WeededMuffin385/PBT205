@@ -7,5 +7,5 @@ pub struct QueryRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueryResponse {
-    pub collisions: Vec<String>,
+    pub collided_accounts: Vec<i64>,
 }

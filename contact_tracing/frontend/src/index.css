@@ -23,6 +23,32 @@ html {
     }
 }
 
+input {
+    all: unset;
+    background-color: white;
+    border-radius: 16px;
+    font-size: 1.5rem;
+
+    min-width: 0;
+    width: 0;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    all: unset;
+    background-color: white;
+    border-radius: 16px;
+    font-size: 1.5rem;
+
+    min-width: 0;
+    width: fit-content;
+    padding: 8px;
+    box-sizing: border-box;
+
+    cursor: pointer;
+}
+
 * {
     box-sizing: border-box;
 }

@@ -6,9 +6,8 @@ use futures_util::StreamExt;
 use lapin::BasicProperties;
 use lapin::options::{BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
 use lapin::types::FieldTable;
-use backend::common::POSITION_EXCHANGE;
-use crate::common::{QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
-use crate::common::query::{QueryRequest, QueryResponse};
+use common::broker::{POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
+use common::query::{QueryRequest, QueryResponse};
 use crate::context::Context;
 
 pub fn router() -> Router<Context> {
@@ -54,12 +53,6 @@ async fn get_account_contacts(
         FieldTable::default()
     ).await.unwrap();
     
-    
-    
-    
-    
-    
-    
     let request = QueryRequest{
         account_id
     };
@@ -67,7 +60,7 @@ async fn get_account_contacts(
     let message = postcard::to_vec::<_, MESSAGE_BUFFER_SIZE>(&request).unwrap();
 
     state.0.broker.channel.basic_publish(
-        POSITION_EXCHANGE.into(),
+        QUERY_REQUEST_EXCHANGE.into(),
         account_id.to_string().into(),
         BasicPublishOptions::default(),
         &message,
@@ -77,5 +70,5 @@ async fn get_account_contacts(
     let delivery = consumer.next().await.unwrap().unwrap();
     let response: QueryResponse = postcard::from_bytes(&delivery.data).unwrap();
     
-    Json(response.collisions).into_response()
+    Json(response.collided_accounts).into_response()
 }

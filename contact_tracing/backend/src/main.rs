@@ -11,7 +11,6 @@ mod app;
 mod context;
 mod api;
 mod authentication_extractor;
-mod common;
 
 #[tokio::main]
 async fn main() {
