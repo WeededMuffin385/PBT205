@@ -1,13 +1,15 @@
 import styles from './App.module.css'
 import World from "./world/World.tsx";
 import Sidebar from "./sidebar/Sidebar.tsx";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import Authorisation from "./authorisation/Authorisation.tsx";
+import type Engine from "../engine/Engine.ts";
 
 function App() {
     const [camera, setCamera] = useState({x: 0, y: 0})
     const [position, setPosition] = useState({x: 0, y: 0})
     const [authorisation, setAuthorisation] = useState(false)
+    const engineRef = useRef<Engine | null>(null)
 
     useEffect(() => {
         const load = async () => {
@@ -32,8 +34,8 @@ function App() {
     return (
         <div className={styles.App}>
             {authorisation && <Authorisation onClose={() => {setAuthorisation(false)}}/>}
-            <Sidebar camera={camera} position={position}/>
-            <World setCamera={setCamera} setPosition={setPosition}/>
+            <Sidebar camera={camera} position={position} engineRef={engineRef}/>
+            <World setCamera={setCamera} setPosition={setPosition} engineRef={engineRef}/>
         </div>
     )
 }

@@ -1,8 +1,8 @@
-mod database;
+pub mod database;
 
 use std::sync::Arc;
 use common::broker::Broker;
-use crate::context::database::Database;
+use common::database::Database;
 
 #[derive(Clone)]
 pub struct Context(pub Arc<InnerContext>);
@@ -23,7 +23,10 @@ impl InnerContext {
     pub async fn new() -> Self {
         let broker = Broker::new().await;
         let database = Database::new().await;
-        let dimensions = [512, 512];
+        let dimensions = [
+            std::env::var("WIDTH").unwrap().parse().unwrap(), 
+            std::env::var("HEIGHT").unwrap().parse().unwrap()
+        ];
 
         Self {
             broker,

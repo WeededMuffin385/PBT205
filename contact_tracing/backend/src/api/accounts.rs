@@ -1,14 +1,15 @@
+use crate::context::database::DatabaseBackendExt as _;
+use crate::context::Context;
 use axum::extract::{Path, State};
-use axum::{Json, Router};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
-use futures_util::StreamExt;
-use lapin::BasicProperties;
-use lapin::options::{BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
-use lapin::types::FieldTable;
-use common::broker::{POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
+use axum::{Json, Router};
+use common::broker::{QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
 use common::query::{QueryRequest, QueryResponse};
-use crate::context::Context;
+use futures_util::StreamExt;
+use lapin::options::{BasicAckOptions, BasicConsumeOptions, BasicPublishOptions, QueueBindOptions, QueueDeclareOptions};
+use lapin::types::FieldTable;
+use lapin::BasicProperties;
 
 pub fn router() -> Router<Context> {
     Router::new()
@@ -68,6 +69,7 @@ async fn get_account_contacts(
     ).await.unwrap().await.unwrap();
     
     let delivery = consumer.next().await.unwrap().unwrap();
+    delivery.ack(BasicAckOptions::default()).await.unwrap();
     let response: QueryResponse = postcard::from_bytes(&delivery.data).unwrap();
     
     Json(response.collided_accounts).into_response()

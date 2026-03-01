@@ -589,7 +589,10 @@ version = "0.1.0"
 dependencies = [
  "lapin",
  "serde",
+ "sqlx",
+ "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

@@ -35,7 +35,16 @@ export default class Engine {
     private accounts: Record<number, Account> = {};
     private positionEventSource: EventSource;
 
-    constructor(canvas: HTMLCanvasElement, dimensions: {w: number, h: number}, account: Account, accounts: Account[]) {
+    constructor(
+        canvas: HTMLCanvasElement,
+        dimensions: {w: number, h: number},
+        account: Account,
+        accounts: Account[],
+        onHoverChange: (account: Account | null, cursor: {
+            x: number,
+            y: number
+        }
+    ) => void ){
         const context = canvas.getContext('2d');
         if (!context) throw new Error('failed to create 2d context')
         this.dimensions = dimensions
@@ -106,6 +115,23 @@ export default class Engine {
 
             this.canvas.setPointerCapture(e.pointerId)
         })
+
+        this.canvas.addEventListener("pointermove", (e) => {
+            const world = this.getWorldCursorPosition(e);
+
+            const account = Object.values(this.accounts).find((value) =>
+                value.x === Math.trunc(world.x) &&
+                value.y === Math.trunc(world.y)
+            )
+
+            if (account !== undefined) {
+                console.log(`Account id: ${account.account_id}, account name: ${account.account_name}`);
+            } else {
+                console.log("Empty cell is hovered")
+            }
+
+            onHoverChange(account ?? null, {x: e.clientX, y: e.clientY})
+        });
 
         this.canvas.addEventListener("pointermove", (e) => {
             if (!this.isDragging) return;
@@ -191,12 +217,43 @@ export default class Engine {
                 return;
         }
 
+        this.clean_interval();
+    }
+
+    private clean_interval() {
         if (!this.direction_keys.up && !this.direction_keys.down && !this.direction_keys.left && !this.direction_keys.right) {
             if (this.position_send_interval !== null) {
                 clearInterval(this.position_send_interval)
                 this.position_send_interval = null
             }
         }
+    }
+
+    private getWorldCursorPosition(event: PointerEvent | MouseEvent) {
+        const rect = this.canvas.getBoundingClientRect();
+
+        const dpr = window.devicePixelRatio || 1;
+        const z = this.zoom * dpr;
+
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        const center = {
+            x: w / 2,
+            y: h / 2,
+        };
+
+        const screen = {
+            x: (event.clientX - rect.left) * dpr,
+            y: (event.clientY - rect.top) * dpr,
+        };
+
+        const world = {
+            x: (screen.x - center.x) / z + this.camera.x,
+            y: (screen.y - center.y) / z + this.camera.y,
+        };
+
+        return world;
     }
 
     start() {
@@ -232,6 +289,10 @@ export default class Engine {
 
     getPosition(): {x: number, y: number} {
         return {...this.account}
+    }
+
+    getAccountName(account_id: number) {
+        return this.accounts[account_id].account_name
     }
 
     private update() {
@@ -270,7 +331,6 @@ export default class Engine {
             center.x - this.camera.x * z,
             center.y - this.camera.y * z,
         )
-
 
         this.draw_board();
         this.draw_accounts();

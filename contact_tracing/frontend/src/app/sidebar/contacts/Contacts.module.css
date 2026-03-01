@@ -36,5 +36,6 @@
         }
 
         overflow-y: scroll;
+        gap: 16px;
     }
 }

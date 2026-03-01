@@ -1,4 +1,5 @@
 use crate::authentication_extractor::Authentication;
+use crate::context::database::DatabaseBackendExt as _;
 use crate::context::Context;
 use axum::extract::State;
 use axum::http::StatusCode;

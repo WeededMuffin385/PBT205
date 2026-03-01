@@ -1,7 +1,10 @@
 import styles from './Sidebar.module.css'
 import Contacts from "./contacts/Contacts.tsx";
+import * as React from "react";
+import type Engine from "../../engine/Engine.ts";
 
 type Props = {
+    engineRef: React.RefObject<Engine | null>
     camera: {x: number, y: number}
     position: {x: number, y: number}
 }
@@ -15,7 +18,7 @@ export default function Sidebar(props: Props) {
             </div>
 
 
-            <Contacts />
+            <Contacts engineRef={props.engineRef}/>
         </div>
     )
 }

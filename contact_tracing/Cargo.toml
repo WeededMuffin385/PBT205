@@ -35,6 +35,12 @@ members = [
 
 
 
+# common
+    uuid = { version = "1.21.0", features = ["v4"] }
+# common end
+
+
+
 # local libs
     common.path = "common"
 # local libs end

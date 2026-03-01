@@ -6,7 +6,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     ports:
       - "5672:5672"      # AMQP
       - "15672:15672"    # Management UI
@@ -25,7 +25,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: secret
@@ -62,6 +62,8 @@ services:
         PROFILE: ${PROFILE}
     environment:
       RUST_LOG: info,tower_http=trace
+      WIDTH: 1000
+      HEIGHT: 1000
     ports:
       - "8080:8080"
     volumes:

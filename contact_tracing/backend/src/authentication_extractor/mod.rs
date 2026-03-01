@@ -6,6 +6,7 @@ use axum_extra::extract::CookieJar;
 use uuid::Uuid;
 use common::account::Account;
 use crate::context::Context;
+use crate::context::database::DatabaseBackendExt as _;
 
 pub struct Authentication {
     pub account: Account,

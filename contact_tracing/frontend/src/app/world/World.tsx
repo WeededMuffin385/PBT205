@@ -1,10 +1,12 @@
 import styles from './World.module.css'
-import {useEffect, useRef} from "react";
+import {useEffect, useRef, useState} from "react";
 import Engine from '../../engine/Engine'
 import {useCookies} from "react-cookie";
 import * as React from "react";
 
 type Props = {
+    engineRef: React.RefObject<Engine | null>
+
     setCamera: React.Dispatch<React.SetStateAction<{
         x: number,
         y: number,
@@ -31,8 +33,10 @@ export type Dimensions = {
 export default function World(props: Props) {
     const [cookies] = useCookies(['account_id'])
 
+    const [hoveredAccount, setHoveredAccount] = useState<Account | null>(null)
+    const [cursor, setCursor] = useState({x: 0, y: 0})
+
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
-    const engineRef = useRef<Engine | null>(null)
     const intervalRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -54,14 +58,17 @@ export default function World(props: Props) {
 
             if (cancelled) return;
 
-            if (engineRef.current) {
-                engineRef.current.stop();
+            if (props.engineRef.current) {
+                props.engineRef.current.stop();
             }
 
-            const engine = new Engine(canvasRef.current!, dimensions, account, accounts)
+            const engine = new Engine(canvasRef.current!, dimensions, account, accounts, (account, cursor) => {
+                setHoveredAccount(account)
+                setCursor(cursor)
+            })
             engine.start()
 
-            engineRef.current = engine;
+            props.engineRef.current = engine;
 
             intervalRef.current = window.setInterval(() => {
                 props.setCamera(engine.getCamera())
@@ -79,9 +86,9 @@ export default function World(props: Props) {
                 intervalRef.current = null;
             }
 
-            if (engineRef.current !== null) {
-                engineRef.current.stop()
-                engineRef.current = null
+            if (props.engineRef.current !== null) {
+                props.engineRef.current.stop()
+                props.engineRef.current = null
             }
         }
     }, [cookies.account_id]);
@@ -91,6 +98,20 @@ export default function World(props: Props) {
             <canvas
                 ref={canvasRef}
             />
+
+            {hoveredAccount && (
+                <div
+                    className={styles.HoveredAccount}
+
+                    style={{
+                        left: cursor.x + 12,
+                        top: cursor.y + 12,
+                    }}
+                >
+                    <h3><span>account id:</span><span>{hoveredAccount.account_id}</span></h3>
+                    <h3><span>account name:</span><span>{hoveredAccount.account_name}</span></h3>
+                </div>
+            )}
         </div>
     )
 }

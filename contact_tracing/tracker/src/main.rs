@@ -1,3 +1,5 @@
+mod database;
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use lapin::{BasicProperties, Channel, Connection, ConnectionProperties, Consumer};
@@ -11,7 +13,9 @@ use tokio::sync::{mpsc, Mutex};
 use tracing_subscriber::EnvFilter;
 use common::account::Account;
 use common::broker::{Broker, POSITION_EXCHANGE, QUERY_REQUEST_EXCHANGE, QUERY_RESPONSE_EXCHANGE};
+use common::database::Database;
 use common::query::{QueryRequest, QueryResponse};
+use crate::database::DatabaseBackendExt as _;
 
 #[tokio::main]
 async fn main() {
@@ -20,21 +24,9 @@ async fn main() {
         .init();
 
     info!("Hello, World!");
-
-    let username = "admin";
-    let password = "secret";
-    let options = PgConnectOptions::new()
-        .username(username)
-        .password(password)
-        .database("postgres")
-        .host("postgres");
-
-    let postgres = PgPoolOptions::new()
-        .max_connections(2)
-        .connect_with(options).await.unwrap();
-
-    let mut conn = postgres.acquire().await.unwrap();
-    let accounts = sqlx::query_as!(Account, "SELECT * FROM accounts").fetch_all(&mut *conn).await.unwrap();
+    
+    let database = Database::new().await;
+    let accounts = database.get_accounts().await;
     let mut accounts: HashMap<i64, Account> = accounts.into_iter().map(|account|(account.account_id, account)).collect();
 
     let broker = Broker::new().await;
@@ -51,6 +43,7 @@ async fn main() {
                     break;
                 };
                 let delivery = delivery.unwrap();
+                delivery.ack(BasicAckOptions::default()).await.unwrap();
                 let message: Account = postcard::from_bytes(&delivery.data).unwrap();
 
                 info!("received an event from position exchange: {message:?}");
@@ -72,6 +65,7 @@ async fn main() {
                     break;
                 };
                 let delivery = delivery.unwrap();
+                delivery.ack(BasicAckOptions::default()).await.unwrap();
                 let request: QueryRequest = postcard::from_bytes(&delivery.data).unwrap();
 
                 let collided_accounts = collisions.iter().rev().filter_map(|&(a, b)|{
