@@ -62,8 +62,8 @@ services:
         PROFILE: ${PROFILE}
     environment:
       RUST_LOG: info,tower_http=trace
-      WIDTH: 1000
-      HEIGHT: 1000
+      WIDTH: 128
+      HEIGHT: 128
     ports:
       - "8080:8080"
     volumes:

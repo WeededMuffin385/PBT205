@@ -36,6 +36,11 @@ async fn post_position(
     authentication: Authentication,
     Json(request): Json<PostPositionRequest>,
 ) -> Response {
+    if request.x < 0 || request.y < 0 || request.x >= state.0.dimensions[0] || request.y >= state.0.dimensions[1] {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+    
+    
     state.0.database.set_account_position(authentication.account.account_id, request.x, request.y).await;
 
     let message = Account {

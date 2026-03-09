@@ -27,7 +27,7 @@ impl Database {
                 .connect_with(options.clone()).await {
                 Ok(pool) => break pool,
                 Err(_) => {
-                    info!("failed to connect to postgres. initialising a retry");
+                    info!("failed to connect to postgres. initialising retry");
                     sleep(Duration::from_secs(5)).await;
                 }
             }

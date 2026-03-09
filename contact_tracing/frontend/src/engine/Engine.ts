@@ -12,7 +12,6 @@ export default class Engine {
     private camera = {x: 0, y: 0};
 
     private account: Account;
-    private position_sent = {x: 0, y: 0}
     private position_send_interval: number | null = null;
 
     private direction = {x: 0, y: 0};
@@ -148,7 +147,7 @@ export default class Engine {
 
             try {
                 this.canvas.releasePointerCapture(e.pointerId)
-            } catch {}
+            } catch { /* empty */ }
         })
 
         this.canvas.addEventListener("pointerleave", (e) => {
@@ -156,7 +155,7 @@ export default class Engine {
 
             try {
                 this.canvas.releasePointerCapture(e.pointerId)
-            } catch {}
+            } catch { /* empty */ }
         })
 
         window.addEventListener("keydown", this.handleKeyDown);
@@ -385,20 +384,21 @@ export default class Engine {
     }
 
     private send_position = () => {
-        this.direction.x = (this.direction_keys.left ? -1 : 0) + (this.direction_keys.right ? +1 : 0)
-        this.direction.y = (this.direction_keys.up ? -1 : 0) + (this.direction_keys.down ? +1 : 0)
+        this.direction.x = (this.direction_keys.left ? -1 : 0) + (this.direction_keys.right ? + 1 : 0)
+        this.direction.y = (this.direction_keys.up ? -1 : 0) + (this.direction_keys.down ? + 1 : 0)
 
-        this.account.x += this.direction.x
-        this.account.y += this.direction.y
+        const target = {x: this.account.x + this.direction.x, y: this.account.y + this.direction.y }
 
-        if ((this.account.x == this.position_sent.x) && (this.account.y == this.position_sent.y)) return
+        if (target.x < 0 || target.y < 0 || target.x >= this.dimensions.w || target.y >= this.dimensions.h) return;
+        if (this.direction.x === 0 && this.direction.y === 0) return;
 
-        this.position_sent = {...this.account}
+        this.account.x = target.x
+        this.account.y = target.y
 
         fetch('/api/position', {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({x: this.account.x, y: this.account.y}),
+            body: JSON.stringify(target),
         })
     }
 }

@@ -1,6 +1,8 @@
+use std::time::Duration;
 use lapin::{Channel, Connection, ConnectionProperties, ExchangeKind};
 use lapin::options::ExchangeDeclareOptions;
 use lapin::types::FieldTable;
+use tokio::time::sleep;
 use tracing::info;
 
 pub const POSITION_EXCHANGE: &str = "position";
@@ -14,10 +16,18 @@ pub struct Broker {
 
 impl Broker {
     pub async fn new() -> Self {
-        let conn = Connection::connect(
-            "amqp://admin:secret@rabbitmq:5672",
-            ConnectionProperties::default(),
-        ).await.unwrap();
+        let conn = loop {
+            match Connection::connect(
+                "amqp://admin:secret@rabbitmq:5672",
+                ConnectionProperties::default(),
+            ).await {
+                Ok(conn) => break conn,
+                Err(_) => {
+                    info!("failed to connect to rabbitmq. initialising retry");
+                    sleep(Duration::from_secs(5)).await;
+                }
+            }
+        };
 
         info!("Connected to RabbitMQ");
 
