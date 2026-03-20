@@ -1,4 +1,4 @@
-.Authorisation {
+.AuthorisationPopup {
     position: absolute;
     left: 0;
     top: 0;
@@ -13,7 +13,7 @@
     align-items: center;
     justify-content: center;
 
-    & > .Inner {
+    .Inner {
         background-color: gray;
         padding: 16px;
         border-radius: 16px;
@@ -53,6 +53,13 @@
             transition: color 0.5s, background-color 0.5s;
 
             text-align: center;
+
+            display: flex;
+            flex-direction: row;
+            align-items: end;
+            justify-content: center;
+
+            gap: 1rem;
 
             &:hover {
                 cursor: pointer;

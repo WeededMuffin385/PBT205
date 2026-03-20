@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 TARGET="x86_64-unknown-linux-gnu"

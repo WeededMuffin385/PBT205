@@ -2,13 +2,13 @@ import styles from './App.module.css'
 import World from "./world/World.tsx";
 import Sidebar from "./sidebar/Sidebar.tsx";
 import {useEffect, useRef, useState} from "react";
-import Authorisation from "./authorisation/Authorisation.tsx";
+import AuthorisationPopup from "./authorisation_popup/AuthorisationPopup.tsx";
 import type Engine from "../engine/Engine.ts";
 
 function App() {
     const [camera, setCamera] = useState({x: 0, y: 0})
     const [position, setPosition] = useState({x: 0, y: 0})
-    const [authorisation, setAuthorisation] = useState(false)
+    const [authorisationInProgress, setAuthorisationInProgress] = useState(false)
     const engineRef = useRef<Engine | null>(null)
 
     useEffect(() => {
@@ -22,9 +22,9 @@ function App() {
             }
 
             if (response.ok) {
-                setAuthorisation(false)
+                setAuthorisationInProgress(false)
             } else {
-                setAuthorisation(true)
+                setAuthorisationInProgress(true)
             }
         }
 
@@ -33,7 +33,7 @@ function App() {
 
     return (
         <div className={styles.App}>
-            {authorisation && <Authorisation onClose={() => {setAuthorisation(false)}}/>}
+            {authorisationInProgress && <AuthorisationPopup onClose={() => {setAuthorisationInProgress(false)}}/>}
             <Sidebar camera={camera} position={position} engineRef={engineRef}/>
             <World setCamera={setCamera} setPosition={setPosition} engineRef={engineRef}/>
         </div>

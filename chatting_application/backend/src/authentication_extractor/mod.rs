@@ -20,7 +20,7 @@ impl FromRequestParts<Context> for Authentication {
 		state: &Context,
 	) -> Result<Self, Self::Rejection> {
 		let jar = CookieJar::from_request_parts(parts, state).await.unwrap();
-		if let Some(session) = jar.get("session") {
+		if let Some(session) = jar.get("session_id") {
 			if let Some(account) = state.0.database.get_account_by_session_id(Uuid::from_str(session.value()).unwrap()).await {
 				Ok(Authentication {
 					account
@@ -29,12 +29,7 @@ impl FromRequestParts<Context> for Authentication {
 				Err(StatusCode::UNAUTHORIZED)
 			}
 		} else {
-			Ok(Authentication {
-				account: Account {
-					account_id: 0,
-					account_name: "guest".to_string(),
-				}
-			})
+			Err(StatusCode::UNAUTHORIZED)
 		}
 	}
 }

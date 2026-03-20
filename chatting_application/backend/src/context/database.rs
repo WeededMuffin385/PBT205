@@ -28,7 +28,16 @@ impl Database {
 
 		Self { pool }
 	}
+	
+	pub async fn add_account(
+		&self,
+		account_name: &str,
+	) -> i64 {
+		let mut conn = self.pool.acquire().await.unwrap();
 
+		sqlx::query_scalar!("INSERT INTO accounts (account_name) VALUES ($1) RETURNING account_id", account_name).fetch_one(&mut *conn).await.unwrap()
+	}
+	
 	pub async fn add_account_session_id(
 		&self,
 		account_id: i64,
@@ -74,7 +83,7 @@ impl Database {
 		session_id: Uuid,
 	) -> Option<Account> {
 		let mut conn = self.pool.acquire().await.unwrap();
-
+		
 		sqlx::query_as!(Account, "
 			SELECT accounts.account_id, account_name
 			FROM sessions

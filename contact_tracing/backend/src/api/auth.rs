@@ -54,7 +54,7 @@ async fn post_auth(
     State(state): State<Context>,
     jar: CookieJar,
     Json(request): Json<PostAuthRequest>,
-) -> Result<Response, StatusCode> {
+) -> Response {
     let x = rand::random_range(0..state.0.dimensions[0]);
     let y = rand::random_range(0..state.0.dimensions[1]);
 
@@ -94,5 +94,5 @@ async fn post_auth(
         BasicProperties::default().with_delivery_mode(1),
     ).await.unwrap().await.unwrap();
 
-    Ok((jar, Json(PostAuthResponse{ x, y })).into_response())
+    (jar, Json(PostAuthResponse{ x, y })).into_response()
 }

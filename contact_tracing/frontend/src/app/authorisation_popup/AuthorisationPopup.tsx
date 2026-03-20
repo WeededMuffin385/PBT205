@@ -1,15 +1,15 @@
-import styles from './Authorisation.module.css'
+import styles from './AuthorisationPopup.module.css'
 import {useRef} from "react";
 
 type Props = {
     onClose: () => void,
 }
 
-export default function Authorisation(props: Props) {
+export default function AuthorisationPopup(props: Props) {
     const accountNameRef = useRef<HTMLInputElement | null>(null);
 
     return (
-        <div className={styles.Authorisation}>
+        <div className={styles.AuthorisationPopup}>
             <div className={styles.Inner}>
                 <h3>Authorise in the system</h3>
 

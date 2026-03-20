@@ -66,25 +66,29 @@
         & > input {
             all: unset;
             background-color: lightgreen;
-            border-radius: 16px;
+            border-radius: 8px;
             font-size: 1rem;
             padding: 8px;
         }
 
         & > button {
             all: unset;
+            box-sizing: border-box;
+
+            border-radius: 8px;
             padding: 8px;
-            text-align: center;
+            width: 100%;
+            min-width: 0;
+
             background-color: lightgreen;
-            border-radius: 16px;
+            transition: color 0.5s, background-color 0.5s;
 
-            box-shadow: black 0 0 8px 0;
-
-            transition: background-color 1s;
+            text-align: center;
 
             &:hover {
                 cursor: pointer;
-                background-color: chartreuse;
+                background-color: green;
+                color: ghostwhite;
             }
         }
     }

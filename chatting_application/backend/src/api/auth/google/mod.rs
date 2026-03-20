@@ -20,8 +20,6 @@ use crate::context::Context;
 /// https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow
 /// https://developers.google.com/identity/protocols/oauth2/web-server
 
-
-
 pub fn router() -> Router<Context> {
 	Router::new()
 	 .route("/", get(google_auth))
@@ -88,7 +86,7 @@ async fn google_auth_callback(
 	
 	let session_id = state.0.database.add_account_session_id(account_id).await;
 
-	let jar = jar.add(Cookie::build(("session", session_id.to_string()))
+	let jar = jar.add(Cookie::build(("session_id", session_id.to_string()))
 	 .path("/")
 	 .http_only(true)
 	 .secure(true)

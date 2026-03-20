@@ -1,5 +1,4 @@
 import styles from './Navigation.module.css'
-import logo from './google_logo.svg'
 import ChannelButton from "./channel_button/ChannelButton.tsx";
 import ChannelCreationPopup from "./channel_creation_popup/ChannelCreationPopup.tsx";
 import {useEffect, useRef, useState} from "react";
@@ -18,10 +17,6 @@ export default function Navigation() {
 
     return (
         <div className={styles.Navigation}>
-            <button className={styles.GoogleAuthButton} onClick={() => {
-                window.location.href = "/api/auth/google"
-            }}><img src={logo} /></button>
-
             <button className={styles.CreateChatButton} onClick={() => {
                 setVisibleChannelCreationPopup(true)
             }}>create a new channel</button>
