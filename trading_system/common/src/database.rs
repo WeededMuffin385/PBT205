@@ -1,3 +1,4 @@
+use crate::account::Account;
 use sqlx::PgPool;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use std::time::Duration;

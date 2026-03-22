@@ -1,0 +1,30 @@
+.Navigation {
+    display: flex;
+    flex-direction: column;
+
+
+    border-radius: var(--radius-md);
+
+    height: 100%;
+    width: fit-content;
+
+    background-color: white;
+    overflow: hidden;
+
+    & > a {
+        all: unset;
+        font-size: var(--font-size-lg);
+
+        padding: var(--space-md);
+
+        &:hover {
+            background-color: palegreen;
+            cursor: pointer;
+        }
+
+        &.active,
+        &:active {
+            background-color: palegreen;
+        }
+    }
+}

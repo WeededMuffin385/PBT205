@@ -61,11 +61,7 @@ services:
         TARGET: ${TARGET}
         PROFILE: ${PROFILE}
     environment:
-      RUST_LOG: info,tower_http=trace
-      WIDTH: 128
-      HEIGHT: 128
-    ports:
-      - "8080:8080"
+      RUST_LOG: info
     volumes:
       - ./assets:/assets
     depends_on:
@@ -73,24 +69,6 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-
-
-
-  tracker:
-    build:
-      context: .
-      dockerfile: docker/tracker.dockerfile
-      args:
-        TARGET: ${TARGET}
-        PROFILE: ${PROFILE}
-    environment:
-      RUST_LOG: info,tower_http=trace
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-
 
 volumes:
   postgres_data:

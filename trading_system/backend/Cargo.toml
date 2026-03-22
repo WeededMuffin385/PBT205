@@ -1,0 +1,25 @@
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = {version = "0.8.8", features = [] }
+axum-extra = { version = "0.12.5", features = ["cookie", "typed-header"] }
+axum-server = {version = "0.8.0", features = ["tls-rustls"]}
+tower-http = {version = "0.6.8", features = ["trace", "fs"]}
+
+
+
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+
+uuid.workspace = true
+
+
+sqlx.workspace = true
+postcard.workspace = true
+
+common.workspace = true
+serde = { version = "1.0.228", features = ["derive"] }

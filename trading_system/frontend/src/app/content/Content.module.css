@@ -1,0 +1,13 @@
+.Content {
+    height: 100%;
+
+    flex: 1;
+
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: white;
+}
