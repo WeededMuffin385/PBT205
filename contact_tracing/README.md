@@ -1,11 +1,19 @@
 ### before compilation, you will need:
-- linux bash (wsl on windows, nothing else on macOS)
+- linux bash (wsl on windows)
 - npm, nvm, node
 - mkcert
-- rust, cargo
+- rust, cargo, sqlx-cli
 
-### steps to compile app:
+### steps to compile and run the system:
+- all scripts must be executed from the root directory of the project, not from the directory with scripts itself
 - run scripts/generate_cert.sh
-- run scripts/run_database.sh in a separate console
-- run scripts/build.sh in a separate console
+- run scripts/reset_database.sh
+- run scripts/build.sh
 - open https://localhost:8080
+
+### configuration
+- to change chess board size, open compose.yaml file and change WIDTH and HEIGHT env variables
+
+
+P. S. \
+There is a [small presentation](documentation/architecture_presentation.odp) with images that shows how parts of the project communicate with each other.

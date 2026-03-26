@@ -15,7 +15,7 @@ sudo -v
 
 (
   cd frontend
-  npm install
+  npm install --verbose
   npm run build
 )
 
