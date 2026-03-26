@@ -17,3 +17,6 @@
 
 P. S. \
 There is a [small presentation](documentation/architecture_presentation.odp) with images that shows how parts of the project communicate with each other.
+
+P. P. S. \
+Link to the repository: https://github.com/WeededMuffin385/PBT205
