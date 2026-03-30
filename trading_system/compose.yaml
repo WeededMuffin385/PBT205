@@ -70,6 +70,23 @@ services:
       postgres:
         condition: service_healthy
 
+  exchange:
+    build:
+      context: .
+      dockerfile: docker/exchange.dockerfile
+      args:
+        TARGET: ${TARGET}
+        PROFILE: ${PROFILE}
+    environment:
+      RUST_LOG: info
+    volumes:
+      - ./assets:/assets
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   rabbitmq_data:
