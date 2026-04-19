@@ -23,7 +23,7 @@ impl Broker {
             ).await {
                 Ok(conn) => break conn,
                 Err(_) => {
-                    info!("failed to connect to rabbitmq. initialising retry");
+                    info!("Failed to connect to rabbitmq. Initialising retry");
                     sleep(Duration::from_secs(5)).await;
                 }
             }

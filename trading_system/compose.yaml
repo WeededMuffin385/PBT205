@@ -62,6 +62,8 @@ services:
         PROFILE: ${PROFILE}
     environment:
       RUST_LOG: info
+    ports:
+      - "8080:8080"
     volumes:
       - ./assets:/assets
     depends_on:
